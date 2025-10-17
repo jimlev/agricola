@@ -5,6 +5,7 @@
         <plugins/>
         <exports/>
     </properties>
+    <file name="assets/timetable.lua"/>
     <file name="assets/actions.lua"/>
     <file name="assets/board.lua"/>
     <file name="assets/gameManager.lua"/>

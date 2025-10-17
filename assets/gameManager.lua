@@ -25,6 +25,7 @@ Menu Settings
 === FLAGS & CONDITIONS ===
 - gameIsPaused : blocage des interactions pour laisser le champ libre aux pop-up temporaires	
 - inBuyCardMode : détermine si le joueur consulte les pioches pour acheter ou non
+- bakingTime : flag à true quand la cuisson est autorisée
 - player.board.isPlayable : blocage des interactions sur le terrain de la ferme du joueur
 
 
@@ -235,9 +236,18 @@ end
 function gameManager:startPlayerTurn()
     local player = self.playerList[self.currentPlayer]
     print("Au tour de", player.name, "("..player.color..")")
+	
 		
     if player.availableMeeples > 0 then
 		
+	-- intro de la timetable	
+	local turn = self.currentTurn
+	if player.timetable:hasTurnEffect(turn) then
+		local summary = player.timetable:applyTurn(turn)
+		-- (plus tard) afficher via UI:showTurnPanel(summary)
+		for _, line in ipairs(summary) do print(line) end
+	end		
+			
 		self:updateUIForPlayer(player)
 
 		self:setPlayerInteractionsEnabled(true)
@@ -274,13 +284,22 @@ function gameManager:executeAction()
 	-- on confirme les changements d'états des Box du playerBoard
 	self.ui:killConfirmPopup()
 	snapshot.board.isPlayable = false -- sécu car snapshot va être kill
-
+	gameManager.bakingTime = false
 	self.inBuyCardMode = false -- les cartes ne sont plus achetables
+	
 	-- je confirme l'achat de celle sélectionnée et je crée son widget
 	if self.currentZoomedCard ~= nil then 
 		local converter = RscConverter.new(player, self.currentZoomedCard, 0)
-		table.insert(player.converters, converter)
+		table.insert(player.converters, converter)		
 		
+		if self.currentZoomedCard.id == 5 then -- MI 'puit'
+			player.timetable:addRewardAtTurn(self.currentTurn + 1, { food = 1 })
+			player.timetable:addRewardAtTurn(self.currentTurn + 2, { food = 1 })
+			player.timetable:addRewardAtTurn(self.currentTurn + 3, { food = 1 })
+			player.timetable:addRewardAtTurn(self.currentTurn + 4, { food = 1 })
+			player.timetable:addRewardAtTurn(self.currentTurn + 5, { food = 1 })
+		end
+
 		self.currentZoomedCard:isTaken() 
 		self.currentZoomedCard:backInMarket()
 		self.currentZoomedCard = nil
@@ -311,7 +330,6 @@ function gameManager:continueAction()
 	local action   = self.pendingAction -- on a forcement une pending1 puisqu'on est en 'continue'
     local player   = action.player
     local snapshot = player.snapshot
-	
 
     -- supprimer le bouton "continue"
     if self.ui.popupLayer.continueBtn then
@@ -365,11 +383,14 @@ function gameManager:continueAction()
 	elseif not self.pendingAction.step then -- c'est une action simple qui utilise un continue() (double-confirmation) 
 		
 		if self.marketLayer:isVisible() and self.currentZoomedCard ~= nil then -- le joueur etait en train d'acheter une carte
-
-			--self.currentZoomedCard:isTaken() -- trop tot si le joueur RollBack
-			
 			self.marketLayer:setVisible(false) 		
 			snapshot.board:centerOnX(2600) -- je centre la camera sur les slots du board du joueur
+			local id = self.currentZoomedCard.id
+			if id == 6 or id == 7 then  
+				self.bakingTime = true --apres l'achat de carte cuisson, on peut cuire du pain 
+			else
+				self.bakingTime = false
+			end
 			
 			local converter = RscConverter.new(snapshot, self.currentZoomedCard, 0)
 			table.insert(snapshot.converters, converter)
@@ -379,10 +400,8 @@ function gameManager:continueAction()
 		end
 		return
 	end	
-	
 end
 
-	
 function gameManager:cancelAction()
     if not self.pendingAction then return end
     
@@ -391,6 +410,7 @@ function gameManager:cancelAction()
     
     -- rollback sur le sign
     sign:cancelAction()
+	gameManager.bakingTime = false
 
     -- rollback du meeple
     action.meeple:returnHome()
@@ -410,9 +430,7 @@ function gameManager:cancelAction()
 		self:cleanMajorCardsMarket() 
 	end
 	
-
     if self.marketLayer:isVisible() then -- je masque puisque 'Cancel'
-
 		if self.currentZoomedCard ~= nil then 
 			self.currentZoomedCard:backInMarket()
 			self.currentZoomedCard = nil
@@ -431,7 +449,7 @@ function gameManager:cancelAction()
 	
 	-- on kill le snapshot corrompu
     self:killSnapshot(player)
-	 
+	
 	player.inventaire:setY(player.inventaire:getY()-500)
 	
     -- retour à l'état actif du joueur
@@ -458,12 +476,6 @@ function gameManager:initPendingCreation(signId, meeple)
         isSpecial  = sign:isSpecialAction()
     }
 	
-print(string.format("PendingAction: %s, SignId=%s, ActionId=%s, isSpecial=%s",
-    tostring(self.pendingAction.player and self.pendingAction.player.name or "nil"),
-    tostring(self.pendingAction.signId),
-    tostring(self.pendingAction.actionId),
-    tostring(self.pendingAction.isSpecial)
-))
 	if sign.actionData.cost then
 		local _, maxQuantity = player:canAfford(sign.actionData.cost)
 		self.pendingAction.actionCounter = maxQuantity
@@ -629,7 +641,7 @@ function gameManager:handleSpecialAction(pending)
 
     -- Cas SINGLE
     elseif self.pendingAction.isSpecial then
-	print("gMhandleSpecialAction: il n'y a pas d'autre action prevue")
+
         self:dispatchActionToHandler(actionData,snapshot)
 
 	else -- cas des single de ressources, on affiche la validation immédiate
@@ -669,9 +681,12 @@ function gameManager:dispatchActionToHandler(actionData, snapshot)
 	elseif self.currentAction == "any_improvement" then
 		self:beginBuyImprovement(snapshot)
 		
-			
 	elseif self.currentAction == "cuisson" then
-      		
+		print("CUISSON ",#snapshot.originalPlayer.majorCard)
+		if #snapshot.originalPlayer.majorCard >= 1 then -- ne marche pas si le joueur a le puit ! TODO
+			self:beginBakingAction(snapshot)
+		end	
+			
 	elseif self.currentAction == "etable" then
       	self:beginAddStable(snapshot)	
     else
@@ -701,6 +716,15 @@ function gameManager:beginAddStable(player)   -- "etable"
 	player.board.isPlayable = true
 end
 
+function gameManager:beginBakingAction(player)   -- "cuisson"
+    player.board:setVisible(true)
+	player.board:centerOnX(2600)
+	gameManager.bakingTime = true
+	player :updateConverterBtn()
+	self:displayValidButton()
+end
+
+
 function gameManager:beginBuyImprovement(player)   -- "Amelioration"
 	-- j'affiche le board du joueur pour preparer le placement du widget MI
     player.board:setVisible(true) 
@@ -714,7 +738,6 @@ end
 -- +++++++++++++++++++++++++++++++++++++ CLIC CLIC CLIC +++++++++++++++++++++++++++++++++++++
 
 function gameManager:handleCardBuy(card)
-
 
 	self:displayContinueButton()	
 end
@@ -731,7 +754,7 @@ function gameManager:handleBoxClick(box)
     -- 1. Si plus de coups disponibles, on ignore
     if counter <= 0 then
         return
-    end
+    end 
 
     local valid = false
 
@@ -852,12 +875,6 @@ function gameManager:getSignById(id)
 end
 
 function gameManager:applyRewards(player, rewards)
-	
-	print(">>>> applyRewards called for player:", player.name)
-    print(">>>> rewards table contents:")
-    for k, v in pairs(rewards) do
-        print("   > ", k, v)
-    end
 	
     for resource, amount in pairs(rewards) do
         if resource ~= "special" then
@@ -1208,6 +1225,7 @@ function gameManager:debugState()
         local player = self.playerList[self.currentPlayer]
         print("Player available meeples:", player.availableMeeples - #player.placedMeeples)
         print("Is GameIsPaused ?", self.gameIsPaused)
+		print("Is it bakingTime ?", gameManager.bakingTime)
     end
     print("========================\n")
 end

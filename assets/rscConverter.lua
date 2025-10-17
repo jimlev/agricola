@@ -68,7 +68,7 @@ function RscConverter:updateButtons(context)
     if not p then return end
 
     -- boutons "toujours" visibles mais activés seulement si ressources dispo
-    self:setButtonEnabled("grain", p:canAfford({grain = 1}))
+    
     self:setButtonEnabled("vegetable", p:canAfford({vegetable = 1}))
     self:setButtonEnabled("sheep", p:canAfford({sheep = 1}))
     self:setButtonEnabled("pig", p:canAfford({pig = 1}))
@@ -78,9 +78,18 @@ function RscConverter:updateButtons(context)
     self:setButtonEnabled("reed", p:canAfford({reed = 1}))	
 
 	if self.mi.useLimit and self.useCount >= self.mi.useLimit then
+		print(self.mi.id, " je suis bloqué par mon useCount")
         self:setButtonEnabled("grain", false)
 	end	
-    --self:setButtonEnabled("bake_bread", bakeEnabled)
+	if gameManager.bakingTime == false then
+			print(self.mi.id, " je suis bloqué car ce n'est pas le mode cuisson")
+        self:setButtonEnabled("grain", false)
+	end	
+	if self.mi.id == 0 then -- feu de base
+		print("ça vaaaa je suis un feu de base !")
+		self:setButtonEnabled("grain", p:canAfford({grain = 1}))
+	end	
+    
 end
 
 
@@ -114,10 +123,15 @@ function RscConverter:inOutConversion(player, rscKind)
         return false
     end
 
+	-- la cuisson de pain est necessaire pour débloquer la conso de grain (sauf pour le feu de base)
+	if rscKind == "grain" and gameManager.bakingTime == false and self.mi.uiModel ~= 0 then
+		return false
+	end
+	
     self.refund[rscKind] = (self.refund[rscKind] or 0) + 1
 	self.useCount = self.useCount + 1
-		print("*^*^*^*^*^*^*^*^*^^*^*^*^* ",self.useCount)
-    for res, amount in pairs(reward) do
+ 
+	for res, amount in pairs(reward) do
         if res == "food" then
             self.pendingFood = (self.pendingFood or 0) + amount
         end
@@ -130,7 +144,6 @@ end
 -- #################################################################################
 -- ############################       UTILITAIRES      #############################
 -- #################################################################################
-
 
 -- Valider transaction : ajoute la nourriture en une fois, vide pending, hide buttons
 function RscConverter:commit()

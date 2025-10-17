@@ -128,18 +128,6 @@ function UI:killValidButton()
 end
 
 
--- Utilitaire simple pour formater l'aperçu des récompenses
-function UI:_formatRewardsText(rewards)
-    if rscType(rewards) ~= "table" then return "Confirmer l'action ?" end
-    local parts = {}
-    for k, v in pairs(rewards) do
-        if k ~= "special" then
-            parts[#parts+1] = string.format("+%s %s", tostring(v), tostring(k))
-        end
-    end
-    if #parts == 0 then return "Confirmer l'action ?" end
-    return table.concat(parts, "   ")
-end
 
 
 function UI:showTurnPanel(t1, t2, tempo)

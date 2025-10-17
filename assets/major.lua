@@ -52,7 +52,7 @@ local MajI_DATA = {
         name = "Puits",
         cost = { stone=3, clay=1 },
         effectType = "passive",
-		reward = {food=4},
+		reward = {food=5},
         png = "gfx/major/major_05.png",
 		uiModel = 4
     },
@@ -96,7 +96,7 @@ local MajI_DATA = {
     {
         name = "Vannerie",
         cost = { reed=2, stone=2 },
-        effectType = "passive",
+        effectType = "active",
 		reward = {food=3},		
         png = "gfx/major/major_10.png",
 		uiModel = 33
@@ -116,6 +116,7 @@ function MajorImprovement:init(id)
     self.reward = data.reward or {}
     self.effectType = data.effectType
 	if data.useLimit then self.useLimit = data.useLimit end
+
     self.uiModel = data.uiModel
 	self:setAnchorPoint(0.5, 0.5)
 
@@ -249,8 +250,7 @@ function MajorImprovement:isTaken()
 	self:updateMarketView()
 end
 
-function MajorImprovement:removeListeners()
-	print("RemoveListeners de ",self.id)
+function MajorImprovement:removeListeners() -- les cartes ne sont plus cliquables
     self:removeEventListener(Event.MOUSE_DOWN, self.onClick, self)
     self:removeEventListener(Event.MOUSE_MOVE, self.onBeginSwipe, self)
     self:removeEventListener(Event.MOUSE_UP, self.onTouchesEnd, self)

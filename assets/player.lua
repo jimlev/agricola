@@ -42,6 +42,7 @@ function Player:init(id, name, color, humanOrNot)
     self.placedMeeples = {}    -- Meeples déjà joués ce round
 	
 	self:initInventory()
+	self.timetable = Timetable.new(self)
 end
 
 function Player:addResource(resource, amount)
@@ -49,7 +50,7 @@ function Player:addResource(resource, amount)
     -- Cibler le compteur lié à la ressource
 	
     local counter = self.inventoryCounters[resource]
-	print("addResource Player : ",counter:getText(), self.resources[resource])
+
     if counter and counter.hilite then
 		
 		counter.hilite:gotoAndPlay(2) -- lance l’anim du highlight
