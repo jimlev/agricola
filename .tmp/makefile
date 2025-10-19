@@ -1,6 +1,9 @@
 LUAC = "C:/Program Files/Gideros/Tools/luac.exe"
 
-all: .tmp/actions.lua.bin .tmp/board.lua.bin .tmp/gameManager.lua.bin .tmp/gridBox.lua.bin .tmp/init.lua.bin .tmp/main.lua.bin .tmp/major.lua.bin .tmp/mapsign.lua.bin .tmp/meeple.lua.bin .tmp/player.lua.bin .tmp/playerBoard.lua.bin .tmp/rscConverter.lua.bin .tmp/toolbox.lua.bin .tmp/ui.lua.bin
+all: .tmp/timetable.lua.bin .tmp/actions.lua.bin .tmp/board.lua.bin .tmp/gameManager.lua.bin .tmp/gridBox.lua.bin .tmp/init.lua.bin .tmp/main.lua.bin .tmp/major.lua.bin .tmp/mapsign.lua.bin .tmp/meeple.lua.bin .tmp/player.lua.bin .tmp/playerBoard.lua.bin .tmp/rscConverter.lua.bin .tmp/toolbox.lua.bin .tmp/ui.lua.bin
+
+.tmp/timetable.lua.bin: assets/timetable.lua
+	$(LUAC) -o ".tmp/timetable.lua.bin" "assets/timetable.lua"
 
 .tmp/actions.lua.bin: assets/actions.lua
 	$(LUAC) -o ".tmp/actions.lua.bin" "assets/actions.lua"

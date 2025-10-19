@@ -1,11 +1,14 @@
 
-
 local basefont = TTFont.new("fonts/GentiumPlus-Bold.ttf",48)
 local titlefont = TTFont.new("fonts/K2D-Bold.ttf",88)
 local regularFont = TTFont.new("fonts/K2D-Regular.ttf",54)
 
+
 UI = Core.class(Sprite)
 
+UI.infoQueue = {}
+UI.isDisplayingInfo = false
+UI.currentInfoTimer = nil
 
 function UI:init()
 	self.name = "UI object"
@@ -49,7 +52,6 @@ function UI:showConfirmPopup(buttons)
 	end
 end
 
- 
 function UI:createChoicePopup(action1, fct1, action2, fct2)
 	local popup = Sprite.new()
 	self.popupLayer:addChild(popup)
@@ -109,7 +111,6 @@ function UI:killConfirmPopup()
 	collectgarbage()
 end
 
-
 function UI:killValidButton()
     print("destroyValidButton appelé")
     print("self.popupLayer existe?", self.popupLayer ~= nil)
@@ -162,10 +163,12 @@ function UI:displayInfo(t1, t2, tempo)
 		infoPanel:addChild(msg)	
 		
     -- Fermeture automatique après X secondes
-    Timer.delayedCall(displayTime * 1000, function()
-        self:killThatPopup(self[popup])  -- Utilise votre fonction existante
-        gameManager.gameIsPaused = false  -- Réactiver le jeu
-    end)	
+--    Timer.delayedCall(displayTime * 1000, function()
+--        self:killThatPopup(self[popup])  -- Utilise votre fonction existante
+--        gameManager.gameIsPaused = false  -- Réactiver le jeu
+--   end)
+	return self[popup]
+	--self:addEventListener(Event.TOUCHES_BEGIN, self.onTouch, self[popup])
 end
 
 function UI:killThatPopup(target)
@@ -176,8 +179,7 @@ function UI:killThatPopup(target)
 end
 
 
-
-function UI:showTurnPanel(t1, t2, tempo)
+function UI:old_showTurnPanel(t1, t2, tempo)
     displayTime = tempo or 3  -- 3 secondes par défaut
 	gameManager.gameIsPaused = true
     -- assombrir le plateau
@@ -215,6 +217,46 @@ function UI:showTurnPanel(t1, t2, tempo)
     end)	
 end
 
+
+function UI:processQueue()
+    if self.isDisplayingInfo then return end
+
+    local nextMsg = table.remove(self.infoQueue, 1)
+    if not nextMsg then return end
+
+    self.isDisplayingInfo = true
+    local popup = self:displayInfo(nextMsg.title, nextMsg.text, nextMsg.duration)
+
+    -- Lancer le timer de fermeture automatique
+    self.currentInfoTimer = Timer.delayedCall(nextMsg.duration * 1000, function()
+        self:hideInfoPanel(popup)
+    end)
+end
+
+function UI:hideInfoPanel(popup)
+    if self.currentInfoTimer then
+        self.currentInfoTimer:stop()
+        self.currentInfoTimer = nil
+    end
+    self:killThatPopup(popup) -- ta fonction existante pour cacher le panneau
+    self.isDisplayingInfo = false
+    self:processQueue() -- enchaîne le suivant
+end
+
+-- ⚡ Skip tactile : zapper le message actuel
+function UI:onTouch(event)
+    if event.phase == "began" and self.isDisplayingInfo then
+        self:hideInfoPanel()
+        return true
+    end
+end
+-- *=**=**=**=**=**=**=**=**=**=**=*
+-- *=**=**=*  SIDE FCT  *=**=**=**=*
+
+function UI:queueInfo(title, text, duration)
+    table.insert(self.infoQueue, { title = title, text = text, duration = duration or 3 })
+    self:processQueue()
+end
 
 function createOverlay()
 	local overlay = Shape.new()

@@ -202,8 +202,8 @@ end
 function gameManager:initNewRound()
 	-- cartel changement de tour
 	local t1, t2 = getRoundInfo(self.currentRound)
-	self.ui:showTurnPanel(t1, t2, 2)
-	
+	--self.ui:showTurnPanel(t1, t2, 2)
+	self.ui:queueInfo(t1, t2, 2)
 	-- au cas où un joueur ait choisi l'action 'first_player'
 	self:reorderPlayers()	
 		
@@ -211,8 +211,8 @@ function gameManager:initNewRound()
 	local newSign = sign.revealNewSigns(self.currentRound)
 	table.insert(self.signs, newSign)
 	
-	self.ui:displayInfo("Nouvelle action: "..newSign.actionData.title, newSign.actionData.comment, 2)
-	
+	--self.ui:displayInfo("Nouvelle action: "..newSign.actionData.title, newSign.actionData.comment, 2)
+	self.ui:queueInfo("Nouvelle action: "..newSign.actionData.title, newSign.actionData.comment, 2)
     -- Reset de chaque sign pour le nouveau round
     for _, sign in ipairs(self.signs) do
         sign:newRound()
@@ -250,7 +250,8 @@ function gameManager:startPlayerTurn()
 		--if player.timetable:hasTurnEffect(round) then blabla end
 			local summary =  player.timetable:applyTurn(round)
 			local summaryText = table.concat(summary, " / ")
-			self.ui:displayInfo(message, summaryText, 4)
+			--self.ui:displayInfo(message, summaryText, 4)
+			self.ui:queueInfo(message, summaryText, 4)
 
 		end		
 	
