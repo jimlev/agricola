@@ -48,7 +48,6 @@ end
 -- Retourne un tableau de résumé textuel (ex: {"+1 PN", "-2 nourriture"})
 function Timetable:applyTurn(turn)
     local cell = self.turns[turn]
-    if not cell then return {} end
 
     local summary = {}
 
@@ -67,7 +66,7 @@ function Timetable:applyTurn(turn)
             table.insert(summary, string.format("+%d %s", qty, res))
         end
     end
-
+print("Timetable:applyTurn "..#summary or "|")
     return summary
 end
 
@@ -98,6 +97,8 @@ function Timetable:clearTurn(turn)
     end
 end
 
+
+
 -- Pour debug ou UI : renvoie une vue simplifiée de la timetable
 function Timetable:getOverview()
     local overview = {}
@@ -109,4 +110,40 @@ function Timetable:getOverview()
         overview[t] = { turn = t, cost = costCount, reward = rewardCount }
     end
     return overview
+end
+
+-- Affiche le contenu complet de la timetable (debug console)
+function Timetable:debugPrint()
+    print("\n===============================")
+    print(string.format("🕒 Timetable du joueur : %s", self.owner and self.owner.name or "(inconnu)"))
+    print("===============================")
+
+    for turnIndex, cell in ipairs(self.turns) do
+        local hasContent = (next(cell.cost) ~= nil or next(cell.reward) ~= nil)
+        if hasContent then
+            print(string.format(" Tour %02d :", turnIndex))
+
+            -- Costs
+            if next(cell.cost) ~= nil then
+                local costStr = {}
+                for res, val in pairs(cell.cost) do
+                    table.insert(costStr, string.format("%s: %d", res, val))
+                end
+                print("   💰 Cost   → " .. table.concat(costStr, " | "))
+            end
+
+            -- Rewards
+            if next(cell.reward) ~= nil then
+                local rewardStr = {}
+                for res, val in pairs(cell.reward) do
+                    table.insert(rewardStr, string.format("%s: %d", res, val))
+                end
+                print("   🎁 Reward → " .. table.concat(rewardStr, " | "))
+            end
+
+            print(" ") -- ligne vide pour lisibilité
+        end
+    end
+
+    print("===============================")
 end

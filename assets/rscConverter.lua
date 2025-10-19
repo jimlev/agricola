@@ -6,6 +6,8 @@ function RscConverter:init(player, source, options)
     options = options or {}
 	self.mi = source
     self.view = Sprite.new() 
+	
+	self.name = self.mi.name
 
 	local slotId = "slot"..player.board.slotList[1]
 	table.remove(player.board.slotList,1)
@@ -68,7 +70,7 @@ function RscConverter:updateButtons(context)
     if not p then return end
 
     -- boutons "toujours" visibles mais activés seulement si ressources dispo
-    
+	
     self:setButtonEnabled("vegetable", p:canAfford({vegetable = 1}))
     self:setButtonEnabled("sheep", p:canAfford({sheep = 1}))
     self:setButtonEnabled("pig", p:canAfford({pig = 1}))
@@ -77,25 +79,44 @@ function RscConverter:updateButtons(context)
     self:setButtonEnabled("clay", p:canAfford({clay = 1}))
     self:setButtonEnabled("reed", p:canAfford({reed = 1}))	
 
-	if self.mi.useLimit and self.useCount >= self.mi.useLimit then
-		print(self.mi.id, " je suis bloqué par mon useCount")
+
+	if self.mi.id == 0 then
+        print("Feu de base : j'ignore le mode cuisson.")
+        self:setButtonEnabled("grain", p:canAfford({grain = 1}))
+        return -- on sort ici, inutile d'aller plus loin
+    end
+	
+	if not gameManager.bakingTime then
+        print(self.mi.id, "désactivé : pas en mode cuisson")
         self:setButtonEnabled("grain", false)
-	end	
-	if gameManager.bakingTime == false then
-			print(self.mi.id, " je suis bloqué car ce n'est pas le mode cuisson")
+        return
+    end
+	
+	-- On est en mode cuisson : vérifier le useLimit
+	if self.useCount == 99 then
         self:setButtonEnabled("grain", false)
-	end	
-	if self.mi.id == 0 then -- feu de base
-		print("ça vaaaa je suis un feu de base !")
-		self:setButtonEnabled("grain", p:canAfford({grain = 1}))
-	end	
-    
+        return
+    end
+	
+	
+    if self.mi.useLimit and self.useCount >= self.mi.useLimit then
+        print(self.mi.id, "désactivé : limite d'utilisation atteinte")
+        self:setButtonEnabled("grain", false)
+        return
+    end
+	
+	-- Sinon, tout est bon : activer si le joueur a du grain
+    local canCook = p:canAfford({grain = 1})
+    print(self.mi.id, " -> état bouton :", canCook)
+    self:setButtonEnabled("grain", p:canAfford({grain = 1}))
 end
 
 
 -- Appelé lorsqu'on clique sur un bouton de conversion
 function RscConverter:onPressConversion(rscKind)
     local p, isSnapshot = gameManager:getActivePlayer()
+
+print(self.name, self.useCount)
 
     -- montrer ok / cancel
     self.okButton:setVisible(true)
@@ -122,20 +143,33 @@ function RscConverter:inOutConversion(player, rscKind)
         print("Conversion échouée : pas assez de " .. rscKind)
         return false
     end
-
-	-- la cuisson de pain est necessaire pour débloquer la conso de grain (sauf pour le feu de base)
-	if rscKind == "grain" and gameManager.bakingTime == false and self.mi.uiModel ~= 0 then
-		return false
-	end
 	
-    self.refund[rscKind] = (self.refund[rscKind] or 0) + 1
-	self.useCount = self.useCount + 1
+	if rscKind == "grain" and self.mi.uiModel ~= 0 then
+		-- la cuisson de pain est necessaire pour débloquer la conso de grain (sauf pour le feu de base)
+		if gameManager.bakingTime == false then
+			return false
+		else 
+		
+			self.refund[rscKind] = (self.refund[rscKind] or 0) + 1
+			
+			self.useCount = self.useCount + 1
+			
+			for res, amount in pairs(reward) do
+				if res == "food" then
+					self.pendingFood = (self.pendingFood or 0) + amount
+				end
+			end
+		end
+		print("Cuisson grain OK, useCount =", self.useCount, "sur limite", self.mi.useLimit)
+	else
+		self.refund[rscKind] = (self.refund[rscKind] or 0) + 1
  
-	for res, amount in pairs(reward) do
-        if res == "food" then
-            self.pendingFood = (self.pendingFood or 0) + amount
-        end
-    end
+		for res, amount in pairs(reward) do
+			if res == "food" then
+				self.pendingFood = (self.pendingFood or 0) + amount
+			end
+		end
+	end	
 
     return true
 end
@@ -165,7 +199,6 @@ function RscConverter:commit()
 	p:updateConverterBtn()
 end
 
-
 -- CANCEL | Annuler : restitue les ressources remboursables
 function RscConverter:cancel(context)
     local p = self.player or gameManager:getActivePlayer()
@@ -176,17 +209,16 @@ function RscConverter:cancel(context)
             p:addResource(k, v)
         end
     end
-    p:updateInventory()
-	p:updateConverterBtn() 	
+    p:updateInventory()	
 	
-	if context then print(context) end
-	if self.useCount ~= 99 then	self.useCount = 0 end
+	if self.useCount ~= 99 then self.useCount = 0 end
 
     self:resetPending()
     self.okButton:setVisible(false)
     self.cancelButton:setVisible(false)
 
     self.totalFoodConvert:setText("0")
+	p:updateConverterBtn() 
 end
 
 
@@ -309,7 +341,6 @@ function RscConverter:createVisualUI(model)
 	
 	self:updateButtons() 
 end
-
 
 function addHotspotInteractive(button, onClick)
     local hotspot = Bitmap.new(Texture.new("gfx/major/converter/boutonCarre_hotspot124.png"))

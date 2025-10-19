@@ -15,6 +15,7 @@ function Player:init(id, name, color, humanOrNot)
 	self.name = name or table.remove(playerName, math.random(#playerName))
     self.color = color or id
 	self.myTurnOrder = id
+	self.hasPlayedThisRound = false
     -- Ressources
     self.resources = {
         wood = 20,

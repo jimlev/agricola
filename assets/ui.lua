@@ -128,6 +128,53 @@ function UI:killValidButton()
 end
 
 
+-- #######################################################################################
+-- ##########################        DISPLAY MODULES        ##############################
+
+function UI:displayInfo(t1, t2, tempo)
+    displayTime = tempo or 2  -- 3 secondes par défaut
+	
+	gameManager.gameIsPaused = true
+    -- assombrir le plateau
+   -- stage:setColorTransform(0.6,0.6,0.6)
+	
+    -- créer le layer popup
+
+	local popup = "infoPopup"..math.random(999)
+		self[popup] = Sprite.new()
+		self:addChild(self[popup])
+	
+	local infoPanel = Bitmap.new(Texture.new("gfx/UI/turnPanel.png"))
+		self[popup]:addChild(infoPanel)
+		infoPanel:setPosition(W/2, H/2.2)
+		infoPanel:setAnchorPoint(0.5, 1)
+
+	local title = TextField.new(titlefont, t1)
+		title:setAnchorPoint(0.5,0.5)
+		title:setTextColor(0xffffff)
+		title:setPosition(0,-130)
+		infoPanel:addChild(title)
+		
+	local msg = TextField.new(regularFont, t2)
+		msg:setAnchorPoint(0.5,0.5)
+		msg:setTextColor(0xffffff)
+		msg:setPosition(0,-80)
+		infoPanel:addChild(msg)	
+		
+    -- Fermeture automatique après X secondes
+    Timer.delayedCall(displayTime * 1000, function()
+        self:killThatPopup(self[popup])  -- Utilise votre fonction existante
+        gameManager.gameIsPaused = false  -- Réactiver le jeu
+    end)	
+end
+
+function UI:killThatPopup(target)
+	target:removeFromParent()
+	target = nil
+	stage.gameBoard:setColorTransform(1,1,1)
+	collectgarbage()
+end
+
 
 
 function UI:showTurnPanel(t1, t2, tempo)
@@ -163,7 +210,7 @@ function UI:showTurnPanel(t1, t2, tempo)
 		
     -- Fermeture automatique après X secondes
     Timer.delayedCall(displayTime * 1000, function()
-        self:killConfirmPopup()  -- Utilise votre fonction existante
+        self:killConfirmPopup()  -- Utilise la fonction existante
         gameManager.gameIsPaused = false  -- Réactiver le jeu
     end)	
 end

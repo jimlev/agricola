@@ -12,8 +12,8 @@ print("======================     NEW GAME     =============================")
 print("=====================================================================")
 print("=====================================================================")
 print("")
-print("🚨 À GERER :  ajouter des helpers pour refresh l'etat des boutons des rscConverter ")
-print("🚨 À GERER :  caler les hotspot des rescConverter")
+print("🚨 À GERER : les panneaux d'info qui se chevauchent ")
+print("🚨 À GERER :  les fins de tour ")
 
 function startGame()
 	actionDB = Actions.new()
@@ -31,6 +31,9 @@ function startGame()
 	local p = gameManager:getActivePlayer()
 		if e.keyCode == KeyCode.R then  -- touche D pour Debug
 			p:counterState()
+		end
+		if e.keyCode == KeyCode.T then  -- touche D pour Debug
+			p.timetable:debugPrint()
 		end
 	end)
 end

@@ -49,8 +49,6 @@ model pendingAction
         actionId   = sign.actionData.id, -- id de l'action métier
         isSpecial  = sign:isSpecialAction()
     }
-
-
 --]]
 
 -- États du jeu
@@ -167,8 +165,6 @@ function gameManager:setupGame()
     local gameBoard = board.new()
     stage:addChild(gameBoard)
     stage.gameBoard = gameBoard
-   -- self.gameBoard = gameBoard
-
 	
 	createMeepleBank()
 	--createFoodConverter()
@@ -206,13 +202,16 @@ end
 function gameManager:initNewRound()
 	-- cartel changement de tour
 	local t1, t2 = getRoundInfo(self.currentRound)
-	self.ui:showTurnPanel(t1, t2, .2)
+	self.ui:showTurnPanel(t1, t2, 2)
 	
 	-- au cas où un joueur ait choisi l'action 'first_player'
 	self:reorderPlayers()	
 		
-    -- Dévoiler les nouvelles cases (règle Agricola)
-    table.insert(self.signs,sign.revealNewSigns(self.currentRound))
+    -- Dévoiler les nouvelles actions dispo (règle Agricola)
+	local newSign = sign.revealNewSigns(self.currentRound)
+	table.insert(self.signs, newSign)
+	
+	self.ui:displayInfo("Nouvelle action: "..newSign.actionData.title, newSign.actionData.comment, 2)
 	
     -- Reset de chaque sign pour le nouveau round
     for _, sign in ipairs(self.signs) do
@@ -223,12 +222,12 @@ function gameManager:initNewRound()
     for _, player in ipairs(self.playerList) do
         player.availableMeeples = player.familySize
         player.placedMeeples = {}
+		player.hasPlayedThisRound = false
     end
 
     -- Déterminer le premier joueur du round
     self.currentPlayer = self:getFirstPlayer()
 
---	stage.gameBoard:centerOnSign(gameManager.signs[5])
     -- Transition vers le premier tour du round
     self:changeState(GAME_STATES.PLAYER_ACTIVE)
 end
@@ -236,24 +235,29 @@ end
 function gameManager:startPlayerTurn()
     local player = self.playerList[self.currentPlayer]
     print("Au tour de", player.name, "("..player.color..")")
-	
 		
     if player.availableMeeples > 0 then
-		
-	-- intro de la timetable	
-	local turn = self.currentTurn
-	if player.timetable:hasTurnEffect(turn) then
-		local summary = player.timetable:applyTurn(turn)
-		-- (plus tard) afficher via UI:showTurnPanel(summary)
-		for _, line in ipairs(summary) do print(line) end
-	end		
+	
+	self:updateUIForPlayer(player)
+	self:setPlayerInteractionsEnabled(true)
+	
+		-- Si c’est le premier meeple de ce joueur ce round
+		if not player.hasPlayedThisRound then
+			player.hasPlayedThisRound = true
 			
-		self:updateUIForPlayer(player)
+			local round = self.currentRound
+			local message = string.format("Tour "..round.." ,à "..player.name.." de jouer!")
+		--if player.timetable:hasTurnEffect(round) then blabla end
+			local summary =  player.timetable:applyTurn(round)
+			local summaryText = table.concat(summary, " / ")
+			self.ui:displayInfo(message, summaryText, 4)
 
-		self:setPlayerInteractionsEnabled(true)
-		if self.meepleInPlay == nil then -- c'est un vrai debut de tour, pas un rollback
-			player:pickMeeple()  -- créé le pointer du meeple qui va etre joué > gameManager.meepleInPlay
+		end		
+	
+		if self.meepleInPlay == nil then  --c'est un vrai debut de tour, pas un rollback
+			player:pickMeeple()   --créé le pointer du meeple qui va etre joué > gameManager.meepleInPlay
 		end
+		
     else
         print(player.name .. " has no more meeples, skipping turn")
         self:nextPlayer()  -- ⚠️ saute directement au suivant
@@ -293,11 +297,12 @@ function gameManager:executeAction()
 		table.insert(player.converters, converter)		
 		
 		if self.currentZoomedCard.id == 5 then -- MI 'puit'
-			player.timetable:addRewardAtTurn(self.currentTurn + 1, { food = 1 })
-			player.timetable:addRewardAtTurn(self.currentTurn + 2, { food = 1 })
-			player.timetable:addRewardAtTurn(self.currentTurn + 3, { food = 1 })
-			player.timetable:addRewardAtTurn(self.currentTurn + 4, { food = 1 })
-			player.timetable:addRewardAtTurn(self.currentTurn + 5, { food = 1 })
+			print(self.currentRound)
+			player.timetable:addRewardAtTurn(self.currentRound + 1, { food = 1 })
+			player.timetable:addRewardAtTurn(self.currentRound + 2, { food = 1 })
+			player.timetable:addRewardAtTurn(self.currentRound + 3, { food = 1 })
+			player.timetable:addRewardAtTurn(self.currentRound + 4, { food = 1 })
+			player.timetable:addRewardAtTurn(self.currentRound + 5, { food = 1 })
 		end
 
 		self.currentZoomedCard:isTaken() 
@@ -388,6 +393,7 @@ function gameManager:continueAction()
 			local id = self.currentZoomedCard.id
 			if id == 6 or id == 7 then  
 				self.bakingTime = true --apres l'achat de carte cuisson, on peut cuire du pain 
+				snapshot:updateConverterBtn()
 			else
 				self.bakingTime = false
 			end
@@ -548,7 +554,6 @@ function gameManager:canStartDrag(playerId)
            self.currentPlayer == playerId
 end
 
-
 function gameManager:nextPlayer()
     local startPlayer = self.currentPlayer
 
@@ -557,19 +562,15 @@ function gameManager:nextPlayer()
         self.currentPlayer = (self.currentPlayer % self.playerCount) + 1
         local player = self.playerList[self.currentPlayer]
 
-        if player.availableMeeples > 0 then
-          --  print("✅", player.name, "a encore des meeples → son tour")
+        if player.availableMeeples > 0 then		
             self:changeState(GAME_STATES.PLAYER_ACTIVE)
             return
-        else
-          --  print("⏩", player.name, "n’a plus de meeples")
         end
 
     until self.currentPlayer == startPlayer
 
     -- Si personne n’a de meeple disponible → fin du round
     print("🏁 Plus aucun meeple → fin du round")
-	
     self:changeState(GAME_STATES.ROUND_END)
 end
 
@@ -720,7 +721,7 @@ function gameManager:beginBakingAction(player)   -- "cuisson"
     player.board:setVisible(true)
 	player.board:centerOnX(2600)
 	gameManager.bakingTime = true
-	player :updateConverterBtn()
+	player:updateConverterBtn()
 	self:displayValidButton()
 end
 
