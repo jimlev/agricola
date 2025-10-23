@@ -202,8 +202,8 @@ end
 function gameManager:initNewRound()
 	-- cartel changement de tour
 	local t1, t2 = getRoundInfo(self.currentRound)
-	--self.ui:showTurnPanel(t1, t2, 2)
-	self.ui:queueInfo(t1, t2, 2)
+
+	self.ui:queueInfo(t1, t2, 7)
 	-- au cas où un joueur ait choisi l'action 'first_player'
 	self:reorderPlayers()	
 		
@@ -211,7 +211,6 @@ function gameManager:initNewRound()
 	local newSign = sign.revealNewSigns(self.currentRound)
 	table.insert(self.signs, newSign)
 	
-	--self.ui:displayInfo("Nouvelle action: "..newSign.actionData.title, newSign.actionData.comment, 2)
 	self.ui:queueInfo("Nouvelle action: "..newSign.actionData.title, newSign.actionData.comment, 2)
     -- Reset de chaque sign pour le nouveau round
     for _, sign in ipairs(self.signs) do
@@ -250,7 +249,7 @@ function gameManager:startPlayerTurn()
 		--if player.timetable:hasTurnEffect(round) then blabla end
 			local summary =  player.timetable:applyTurn(round)
 			local summaryText = table.concat(summary, " / ")
-			--self.ui:displayInfo(message, summaryText, 4)
+
 			self.ui:queueInfo(message, summaryText, 4)
 
 		end		
@@ -597,7 +596,14 @@ function gameManager:endRound()
 --    for _, player in ipairs(self.playerList) do
 --        player.placedMeeples = {}
 --    end
-    
+	local harvestRounds = {4, 7, 9, 11, 13, 14}
+	
+	for _, tour in ipairs(harvestRounds) do
+		if self.currentRound == tour then
+			self:startHarvestPhase()
+		end
+	end  
+	
     -- TODO: phase de nourriture / reproduction
 	
     self.currentRound = self.currentRound + 1
@@ -613,7 +619,6 @@ function gameManager:endGame()
     print("Game Over! Thanks for playing.")
     -- TODO: afficher scores, retour menu, etc. 
 end
-
 
 
 -- ===========================================================
@@ -811,6 +816,42 @@ function gameManager:handleBoxClick(box)
  
     end
 end
+
+-- §§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§
+-- §§§§§§§§§§§§§§§§§     HARVEST TIME     §§§§§§§§§§§§§§§§§§§§
+-- §§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§
+
+-- PHASE DE RÉCOLTE
+function gameManager:startHarvestPhase()
+    -- Étape 1 : Récolte
+    self.playerBoard:centerOnX(1100)
+    self.ui:displayInfo("Récolte des plantations", "Vous obtenez : " .. self:getHarvestSummary(), 3)
+
+    Timer.delayedCall(3200, function()
+        -- Étape 2 : Nourrir la famille
+        self.playerBoard:centerOnX("house")
+        local need = self:getFoodNeed()
+        local have = self.player:getResource("food")
+        self.ui:displayInfo(
+            "Nourrir votre famille",
+            string.format("Il vous faut %d nourriture. Vous avez %d.", need, have),
+            4
+        )
+
+        -- on laisse le joueur utiliser ses converters ici
+        -- quand il valide -> on passe à l'étape suivante
+        Timer.delayedCall(5000, function()
+            -- Étape 3 : Naissances
+            self.playerBoard:centerOnX("animals")
+            self.ui:displayInfo(
+                "Naissances chez les animaux",
+                "Vous avez " .. self:getAnimalBirthsSummary(),
+                3
+            )
+        end)
+    end)
+end
+
 
 
 -- +++++++++++++++++++++++ HELPERS +++++++++++++++++++++++++++

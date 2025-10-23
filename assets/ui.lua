@@ -112,17 +112,11 @@ function UI:killConfirmPopup()
 end
 
 function UI:killValidButton()
-    print("destroyValidButton appelé")
-    print("self.popupLayer existe?", self.popupLayer ~= nil)
-    if self.popupLayer then
-        print("self.popupLayer.validBtn existe?", self.popupLayer.validBtn ~= nil)
-        print("Type de validBtn:", type(self.popupLayer.validBtn))
-    end
-    
+
     if self.popupLayer and self.popupLayer.validBtn then
         self.popupLayer:removeChild(self.popupLayer.validBtn)
         self.popupLayer.validBtn = nil
-        print("Bouton valid détruit")
+        --print("Bouton valid détruit")
     else
         print("Impossible de détruire validBtn - non trouvé")
     end
@@ -131,101 +125,54 @@ end
 
 -- #######################################################################################
 -- ##########################        DISPLAY MODULES        ##############################
-
-function UI:displayInfo(t1, t2, tempo)
-    displayTime = tempo or 2  -- 3 secondes par défaut
+function UI:displayInfo(t1, t2)	
 	
-	gameManager.gameIsPaused = true
-    -- assombrir le plateau
-   -- stage:setColorTransform(0.6,0.6,0.6)
-	
-    -- créer le layer popup
-
-	local popup = "infoPopup"..math.random(999)
-		self[popup] = Sprite.new()
-		self:addChild(self[popup])
-	
-	local infoPanel = Bitmap.new(Texture.new("gfx/UI/turnPanel.png"))
-		self[popup]:addChild(infoPanel)
-		infoPanel:setPosition(W/2, H/2.2)
-		infoPanel:setAnchorPoint(0.5, 1)
-
-	local title = TextField.new(titlefont, t1)
-		title:setAnchorPoint(0.5,0.5)
-		title:setTextColor(0xffffff)
-		title:setPosition(0,-130)
-		infoPanel:addChild(title)
-		
-	local msg = TextField.new(regularFont, t2)
-		msg:setAnchorPoint(0.5,0.5)
-		msg:setTextColor(0xffffff)
-		msg:setPosition(0,-80)
-		infoPanel:addChild(msg)	
-		
-    -- Fermeture automatique après X secondes
---    Timer.delayedCall(displayTime * 1000, function()
---        self:killThatPopup(self[popup])  -- Utilise votre fonction existante
---        gameManager.gameIsPaused = false  -- Réactiver le jeu
---   end)
-	return self[popup]
-	--self:addEventListener(Event.TOUCHES_BEGIN, self.onTouch, self[popup])
-end
-
-function UI:killThatPopup(target)
-	target:removeFromParent()
-	target = nil
-	stage.gameBoard:setColorTransform(1,1,1)
-	collectgarbage()
-end
-
-
-function UI:old_showTurnPanel(t1, t2, tempo)
-    displayTime = tempo or 3  -- 3 secondes par défaut
-	gameManager.gameIsPaused = true
-    -- assombrir le plateau
-    stage.gameBoard:setColorTransform(0.6,0.6,0.6)
-
-	stage.gameBoard:centerOnSign(gameManager.signs[#gameManager.signs])	
-	
-    -- créer le layer popup
-	if not self.popupLayer then
-        self.popupLayer = Sprite.new()
-        self:addChild(self.popupLayer)
+    local popupName = "infoPopup"..math.random(999)
+    self[popupName] = Sprite.new()
+    self:addChild(self[popupName])
+    
+    local popup = self[popupName]
+    
+    popup.touchListener = function(event)
+        if self.isDisplayingInfo and popup:getParent() then
+            print("⚡ SKIP vers popup suivante")
+            self:hideInfoPanel(popup)
+            event:stopPropagation()
+        end
     end
-	
-	local turnPanel = Bitmap.new(Texture.new("gfx/UI/turnPanel.png"))
-		self.popupLayer:addChild(turnPanel)
-		turnPanel:setPosition(W/2, H/1.6)
-		turnPanel:setAnchorPoint(0.5, 1)
-
-	local turnTitle = TextField.new(titlefont, t1)
-		turnTitle:setAnchorPoint(0.5,0.5)
-		turnTitle:setTextColor(0xffffff)
-		turnTitle:setPosition(0,-130)
-		turnPanel:addChild(turnTitle)
-		
-	local turnBase = TextField.new(regularFont, t2)
-		turnBase:setAnchorPoint(0.5,0.5)
-		turnBase:setTextColor(0xffffff)
-		turnBase:setPosition(0,-80)
-		turnPanel:addChild(turnBase)	
-		
-    -- Fermeture automatique après X secondes
-    Timer.delayedCall(displayTime * 1000, function()
-        self:killConfirmPopup()  -- Utilise la fonction existante
-        gameManager.gameIsPaused = false  -- Réactiver le jeu
-    end)	
+    popup:addEventListener(Event.MOUSE_DOWN, popup.touchListener)
+    
+    local infoPanel = Bitmap.new(Texture.new("gfx/UI/turnPanel.png"))
+    popup:addChild(infoPanel)
+    infoPanel:setPosition(W/2, H/2.2+math.random(666))
+    infoPanel:setAnchorPoint(0.5, 1)
+    
+    local title = TextField.new(titlefont, t1)
+    title:setAnchorPoint(0.5,0.5)
+    title:setTextColor(0xffffff)
+    title:setPosition(0,-130)
+    infoPanel:addChild(title)
+    
+    local msg = TextField.new(regularFont, t2)
+    msg:setAnchorPoint(0.5,0.5)
+    msg:setTextColor(0xffffff)
+    msg:setPosition(0,-80)
+    infoPanel:addChild(msg)	
+    
+    return popup
 end
-
 
 function UI:processQueue()
-    if self.isDisplayingInfo then return end
+    if self.isDisplayingInfo or #self.infoQueue == 0 then
+        return
+    end
 
-    local nextMsg = table.remove(self.infoQueue, 1)
-    if not nextMsg then return end
-
+    stage:setColorTransform(0.6, 0.6, 0.6)
+	gameManager.gameIsPaused = true -- je bloque le gameplay
     self.isDisplayingInfo = true
-    local popup = self:displayInfo(nextMsg.title, nextMsg.text, nextMsg.duration)
+	
+	local nextMsg = table.remove(self.infoQueue, 1)
+	local popup = self:displayInfo(nextMsg.title, nextMsg.text)
 
     -- Lancer le timer de fermeture automatique
     self.currentInfoTimer = Timer.delayedCall(nextMsg.duration * 1000, function()
@@ -238,23 +185,35 @@ function UI:hideInfoPanel(popup)
         self.currentInfoTimer:stop()
         self.currentInfoTimer = nil
     end
-    self:killThatPopup(popup) -- ta fonction existante pour cacher le panneau
+    self:killThatPopup(popup) -- on kill la popup
+	
     self.isDisplayingInfo = false
-    self:processQueue() -- enchaîne le suivant
+	gameManager.gameIsPaused = false -- je débloque le gameplay
+	stage:setColorTransform(1,1,1)
+    self:processQueue() -- on interroge le processeur pour voir si d'autres msg attendent
 end
 
--- ⚡ Skip tactile : zapper le message actuel
-function UI:onTouch(event)
-    if event.phase == "began" and self.isDisplayingInfo then
-        self:hideInfoPanel()
-        return true
+
+function UI:killThatPopup(target)   
+    if target.touchListener then
+        target:removeEventListener(Event.MOUSE_DOWN, target.touchListener)
+        target.touchListener = nil
     end
-end
+    
+    target:removeFromParent()
+    target = nil
+    
+    stage.gameBoard:setColorTransform(1,1,1)
+    collectgarbage()
+end 
+
+
 -- *=**=**=**=**=**=**=**=**=**=**=*
 -- *=**=**=*  SIDE FCT  *=**=**=**=*
 
 function UI:queueInfo(title, text, duration)
     table.insert(self.infoQueue, { title = title, text = text, duration = duration or 3 })
+
     self:processQueue()
 end
 
@@ -269,5 +228,5 @@ function createOverlay()
 		overlay:closePath()
 		overlay:endPath()
 
-		return overlay
+	return overlay
 end

@@ -5,7 +5,6 @@
         <plugins/>
         <exports/>
     </properties>
-    <file name="assets/timetable.lua"/>
     <file name="assets/actions.lua"/>
     <file name="assets/board.lua"/>
     <file name="assets/gameManager.lua"/>
@@ -18,6 +17,7 @@
     <file name="assets/player.lua"/>
     <file name="assets/playerBoard.lua"/>
     <file name="assets/rscConverter.lua"/>
+    <file name="assets/timetable.lua"/>
     <file name="assets/toolbox.lua"/>
     <file name="assets/ui.lua"/>
     <folder name="gfx">

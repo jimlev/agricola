@@ -288,7 +288,7 @@ function getRoundInfo(currentRound)
                 t1 = string.format("Période %d - RÉCOLTE !", currentPeriod)
                 t2 = "Phase de récolte en cours"
             elseif currentRound == 14 then
-                t1 = "Dernier tour !"
+                t1 = "Dernier tour !" 
                 t2 = "Récolte finale"
             elseif turnsUntilHarvest == 1 then
                 t1 = string.format("Période %d, tour %d", currentPeriod, currentRound)

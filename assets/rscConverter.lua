@@ -81,7 +81,7 @@ function RscConverter:updateButtons(context)
 
 
 	if self.mi.id == 0 then
-        print("Feu de base : j'ignore le mode cuisson.")
+
         self:setButtonEnabled("grain", p:canAfford({grain = 1}))
         return -- on sort ici, inutile d'aller plus loin
     end

@@ -12,7 +12,7 @@ print("======================     NEW GAME     =============================")
 print("=====================================================================")
 print("=====================================================================")
 print("")
-print("🚨 À GERER : les panneaux d'info qui se chevauchent ")
+print("🚨 À GERER :  ")
 print("🚨 À GERER :  les fins de tour ")
 
 function startGame()

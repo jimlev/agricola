@@ -74,7 +74,7 @@ end
 
 function GridBox:onClick(event)
 	if self:hitTestPoint(event.x, event.y) and self:getParent():isItPlayable() then
---		print("GridBox:onClick: ",self:getParent():isVisible(),self:getParent().player.name)
+		--print("GridBox:onClick: ",event.x, (self:getX()-(self:getWidth()/2)))
 		event:stopPropagation()
 		gameManager:handleBoxClick(self)
 	end 
@@ -130,7 +130,6 @@ function GridBox:setState(s, data)
     self.state = s
 
 end
-
 
 
 -- Helpers pour la gestion des champs

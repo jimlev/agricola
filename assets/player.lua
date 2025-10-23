@@ -193,17 +193,17 @@ end
 
 function Player:initInventory()
 
-local inventaire = Bitmap.new(Texture.new("gfx/bg_inventaire.png"))
-	stage.UI:addChild(inventaire)
-	inventaire:setPosition(W/2, gBottom)
-	inventaire:setAnchorPoint(0.5, 1)
-	self.inventaire = inventaire
-	self.inventaire:setVisible(false)
-		
-local myColorEnv = Bitmap.new(Texture.new("gfx/UI/" .. self.color .. "Inv_focus.png"))
-	self.inventaire:addChild(myColorEnv)
-	myColorEnv:setAnchorPoint(0.5, 1)
-	myColorEnv:setX(-44)
+	local inventaire = Bitmap.new(Texture.new("gfx/bg_inventaire.png"))
+		stage.UI:addChild(inventaire)
+		inventaire:setPosition(W/2, gBottom)
+		inventaire:setAnchorPoint(0.5, 1)
+		self.inventaire = inventaire
+		self.inventaire:setVisible(false)
+			
+	local myColorEnv = Bitmap.new(Texture.new("gfx/UI/" .. self.color .. "Inv_focus.png"))
+		self.inventaire:addChild(myColorEnv)
+		myColorEnv:setAnchorPoint(0.5, 1)
+		myColorEnv:setX(-44)
 	
 	self.inventoryCounters = {}
 	
@@ -286,4 +286,48 @@ function Player:counterState()
 	end
 end
 
+
+-- !#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!
+-- !#!#!#!#!#!#!#!#!#!#!#  HELPERS DES RECOLTES   !#!#!#!#!#!#!#!#!#!#!#
+-- !#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!
+
+
+-- Retourne une phrase récapitulative de la récolte
+function Player:getHarvestSummary()
+    local summary = {}
+
+    -- Champs de blé
+    if self.fields and #self.fields > 0 then
+        local totalGrain = 0
+        for _, field in ipairs(self.fields) do
+            if field.crop == "grain" and field.stock > 0 then
+                totalGrain = totalGrain + field.stock
+                self:addResource("grain", field.stock)
+                field.stock = 0
+            end
+        end
+        if totalGrain > 0 then
+            table.insert(summary, string.format("+%d grain", totalGrain))
+        end
+    end
+
+    -- Champs de légumes
+    local totalVeg = 0
+    for _, field in ipairs(self.fields or {}) do
+        if field.crop == "vegetable" and field.stock > 0 then
+            totalVeg = totalVeg + field.stock
+            self:addResource("vegetable", field.stock)
+            field.stock = 0
+        end
+    end
+    if totalVeg > 0 then
+        table.insert(summary, string.format("+%d légumes", totalVeg))
+    end
+
+    if #summary == 0 then
+        return "Rien à récolter cette saison."
+    else
+        return table.concat(summary, " / ")
+    end
+end
 

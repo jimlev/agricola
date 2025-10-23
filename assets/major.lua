@@ -16,7 +16,6 @@ local MajI_DATA = {
         cost = { clay=2 },
         effectType = "active",
 		reward = {food=2},
-		useLimit = 1,
         png = "gfx/major/major_01.png",
 		uiModel = 11
     },
@@ -24,8 +23,7 @@ local MajI_DATA = {
         name = "Foyer2",
         cost = { clay=3 },
         effectType = "active",
-		reward = {food=2},
-		useLimit = 1,
+		reward = {food=2},	
         png = "gfx/major/major_02.png",
 		uiModel = 11
     },
@@ -34,7 +32,6 @@ local MajI_DATA = {
         cost = {clay=4 },
         effectType = "active",
 		reward = {food=3},
-		useLimit = 1,
         png = "gfx/major/major_03.png",
 		uiModel = 12
     },
@@ -42,8 +39,7 @@ local MajI_DATA = {
         name = "Fourneau2",
         cost = { clay=5 },
         effectType = "active",
-		reward = {food=3},
-		useLimit = 1,
+		reward = {food=3}, 
         png = "gfx/major/major_04.png",
 		uiModel = 12
     },
