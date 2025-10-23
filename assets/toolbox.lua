@@ -79,8 +79,10 @@ function createMeepleBank()
 		foodCounter:setPosition(-194,-64)
 		stage.meepleBank:addChild(foodCounter)
 		stage.foodCounter = foodCounter
+	
+	local player, isSnapshot = gameManager:getActivePlayer()
 
-	local foodMax = TextField.new(numberFont, "/4")
+	local foodMax = TextField.new(numberFont, "/"..player:neededFoodCount())
 		foodMax:setAnchorPoint(0,1)
 		foodMax:setTextColor(0xffffff)
 		foodMax:setPosition(-190,-64)
@@ -113,7 +115,7 @@ function updateMeepleBank(player)
 		--stage.meepleBank.hilite:gotoAndPlay(2)
 	end
 	stage.meepleCounter:setText(player.availableMeeples)
-	stage.foodMax:setText("/"..(player.familySize *2))
+	stage.foodMax:setText("/"..player:neededFoodCount())
 end
 
 function createPlayerBoard()
@@ -262,7 +264,7 @@ function createViewCardmarketBtn()
 			end
 		end
 	end
-		btnViewCardMarket:addEventListener(Event.MOUSE_DOWN, onClick, btnViewCardMarket)
+	btnViewCardMarket:addEventListener(Event.MOUSE_DOWN, onClick, btnViewCardMarket)
 	
 end
 

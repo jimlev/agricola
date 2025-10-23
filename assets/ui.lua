@@ -1,8 +1,7 @@
 
 local basefont = TTFont.new("fonts/GentiumPlus-Bold.ttf",48)
-local titlefont = TTFont.new("fonts/K2D-Bold.ttf",88)
-local regularFont = TTFont.new("fonts/K2D-Regular.ttf",54)
-
+local titlefont = TTFont.new("fonts/K2D-Bold.ttf",78)
+local regularFont = TTFont.new("fonts/K2D-Regular.ttf",50)
 
 UI = Core.class(Sprite)
 
@@ -13,8 +12,8 @@ UI.currentInfoTimer = nil
 function UI:init()
 	self.name = "UI object"
     -- conteneur pour les popups
-   -- self.popupLayer = Sprite.new()
-    --self:addChild(self.popupLayer)
+    -- self.popupLayer = Sprite.new()
+    -- self:addChild(self.popupLayer)
 end
 
 function UI:showConfirmPopup(buttons)
@@ -112,7 +111,6 @@ function UI:killConfirmPopup()
 end
 
 function UI:killValidButton()
-
     if self.popupLayer and self.popupLayer.validBtn then
         self.popupLayer:removeChild(self.popupLayer.validBtn)
         self.popupLayer.validBtn = nil
@@ -144,7 +142,7 @@ function UI:displayInfo(t1, t2)
     
     local infoPanel = Bitmap.new(Texture.new("gfx/UI/turnPanel.png"))
     popup:addChild(infoPanel)
-    infoPanel:setPosition(W/2, H/2.2+math.random(666))
+    infoPanel:setPosition(W/2, H/1.6)
     infoPanel:setAnchorPoint(0.5, 1)
     
     local title = TextField.new(titlefont, t1)
@@ -167,7 +165,7 @@ function UI:processQueue()
         return
     end
 
-    stage:setColorTransform(0.6, 0.6, 0.6)
+    stage.gameBoard:setColorTransform(0.6, 0.6, 0.6)
 	gameManager.gameIsPaused = true -- je bloque le gameplay
     self.isDisplayingInfo = true
 	
@@ -189,10 +187,9 @@ function UI:hideInfoPanel(popup)
 	
     self.isDisplayingInfo = false
 	gameManager.gameIsPaused = false -- je débloque le gameplay
-	stage:setColorTransform(1,1,1)
+	stage.gameBoard:setColorTransform(1,1,1)
     self:processQueue() -- on interroge le processeur pour voir si d'autres msg attendent
 end
-
 
 function UI:killThatPopup(target)   
     if target.touchListener then

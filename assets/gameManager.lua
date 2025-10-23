@@ -9,6 +9,7 @@ GAMEPLAY FLOW - Machine à états gameManager
 5. ACTION_RESOLVING : Validation - animations récompenses + mise à jour inventaire
 6. TURN_END         : Fin du tour joueur → retour PLAYER_ACTIVE (suivant) ou ROUND_END (si tous finis)
 7. ROUND_END        : Phase de fin de round → remise des meeples, nourritures/repro, round suivant
+7.b HARVEST			: Phase intermediaire dédiée à la récolte
 8. GAME_END         : Fin de partie
 
 === TRANSITIONS ===
@@ -59,6 +60,7 @@ local GAME_STATES = {
     ACTION_PENDING   = "ACTION_PENDING",   -- Choix posé, popup ouverte
     ACTION_RESOLVING = "ACTION_RESOLVING", -- Validation / exécution
     TURN_END         = "TURN_END",
+	HARVEST 		 = "HARVEST",  -- ✨ Nouvel état
     ROUND_END        = "ROUND_END",
     GAME_END         = "GAME_END"
 }
@@ -126,8 +128,9 @@ function gameManager:exitState(state)
     if state == GAME_STATES.PLAYER_ACTIVE then
         self:setPlayerInteractionsEnabled(false)
     elseif state == GAME_STATES.ACTION_PENDING then
-		-- if self.ui then self.ui:hideConfirmPopup() end
 
+    elseif state == GAME_STATES.TURN_END then
+		print("_____________________________________________________ fin de tour")
     end
 end
 
@@ -150,6 +153,9 @@ function gameManager:enterState(state, fromState)
     elseif state == GAME_STATES.TURN_END then
         self:endPlayerTurn()
         
+	elseif state == GAME_STATES.HARVEST then
+        self:onEnterHarvest()
+		
     elseif state == GAME_STATES.ROUND_END then
         self:endRound()
         
@@ -167,18 +173,16 @@ function gameManager:setupGame()
     stage.gameBoard = gameBoard
 	
 	createMeepleBank()
-	--createFoodConverter()
 		
 	local farmLayer = Sprite.new()
 	stage:addChild(farmLayer)
     self.farmLayer = farmLayer		
-
 	
 	local marketLayer = createOverlay()
 	local majorShelf = Sprite.new()
 	local minorShelf = Sprite.new()	
 	local occupationShelf = Sprite.new()	
-	stage:addChild(marketLayer)
+	stage:addChild(marketLayer)	
 
     self.marketLayer = marketLayer	
 	self.marketLayer:setVisible(false)
@@ -593,23 +597,22 @@ end
 function gameManager:endRound()
     print("Round " .. self.currentRound .. " ended")
     
---    for _, player in ipairs(self.playerList) do
---        player.placedMeeples = {}
---    end
-	local harvestRounds = {4, 7, 9, 11, 13, 14}
+	local harvestRounds = {4, 7, 9, 11, 13, 14}	
+    local isHarvestRound = false
 	
-	for _, tour in ipairs(harvestRounds) do
-		if self.currentRound == tour then
-			self:startHarvestPhase()
-		end
-	end  
-	
-    -- TODO: phase de nourriture / reproduction
+    for _, tour in ipairs(harvestRounds) do
+        if self.currentRound == tour then
+            isHarvestRound = true
+            break
+        end
+    end  
 	
     self.currentRound = self.currentRound + 1
 
     if self.currentRound > self.maxRounds then
         self:changeState(GAME_STATES.GAME_END)
+    elseif isHarvestRound then
+        self:changeState(GAME_STATES.HARVEST)  -- 🌾 Passe en mode récolte
     else
         self:changeState(GAME_STATES.ROUND_INIT)
     end
@@ -820,39 +823,48 @@ end
 -- §§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§
 -- §§§§§§§§§§§§§§§§§     HARVEST TIME     §§§§§§§§§§§§§§§§§§§§
 -- §§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§
+function gameManager:onEnterHarvest()
+	print("🌾 Début de la phase de récolte")
+	self.harvestPlayerIndex = 1 -- on va commencer par le premier joueur
+    self:startHarvestPhase()
+end
 
 -- PHASE DE RÉCOLTE
 function gameManager:startHarvestPhase()
-    -- Étape 1 : Récolte
-    self.playerBoard:centerOnX(1100)
-    self.ui:displayInfo("Récolte des plantations", "Vous obtenez : " .. self:getHarvestSummary(), 3)
+	local player = self.playerList[self.harvestPlayerIndex]
+    self:harvestTime_phaseOne(player)
+end	
+	
+function gameManager:harvestTime_phaseOne(player)
+     -- Étape 1 : Récolte champs
+    player.board:centerOnX(800)
+    self.ui:queueInfo("Récolte des plantations", player:getHarvestSummary(), 3)
 
-    Timer.delayedCall(3200, function()
-        -- Étape 2 : Nourrir la famille
-        self.playerBoard:centerOnX("house")
-        local need = self:getFoodNeed()
-        local have = self.player:getResource("food")
-        self.ui:displayInfo(
-            "Nourrir votre famille",
-            string.format("Il vous faut %d nourriture. Vous avez %d.", need, have),
-            4
-        )
-
-        -- on laisse le joueur utiliser ses converters ici
-        -- quand il valide -> on passe à l'étape suivante
-        Timer.delayedCall(5000, function()
-            -- Étape 3 : Naissances
-            self.playerBoard:centerOnX("animals")
-            self.ui:displayInfo(
-                "Naissances chez les animaux",
-                "Vous avez " .. self:getAnimalBirthsSummary(),
-                3
-            )
-        end)
-    end)
+    self:harvestTime_phaseTwo(player)
 end
 
+function gameManager:harvestTime_phaseTwo(player)
+     -- Étape 2 : Nourrir la famille
+    player.board:centerOnX(2800)
+	
+    self.ui:queueInfo("Nourriture nécessaire "..player:neededFoodCount(), "Vous avez " .. player:getFoodSummary(), 5)
 
+    self:harvestTime_phaseThree(player)
+end
+
+function gameManager:harvestTime_phaseThree(player)
+     -- Étape 3 : Naissance animaux
+    player.board:centerOnX(800)
+    self.ui:queueInfo("Naissance chez vos animaux", "Vous obtenez : " .. player:getReproSummary(), 5)
+
+    self:endHarvestPhase()
+end
+
+function gameManager:endHarvestPhase()
+    print("🌾 Fin de la phase de récolte")
+    -- Retour au cycle normal
+    self:changeState(GAME_STATES.ROUND_INIT)
+end
 
 -- +++++++++++++++++++++++ HELPERS +++++++++++++++++++++++++++
 -- +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -1142,7 +1154,7 @@ function gameManager:debugState()
 	print("Mémoire utilisée : " .. math.floor(collectgarbage("count")) .. " Ko")
 
 	-- Round et state
-    print(string.format("Round: %d | State: %s", self.round or 1, self.currentState or "nil"))
+    print(string.format("Round: %d | State: %s", self.currentRound or 1, self.currentState or "nil"))
 
     -- Current player
     local currentPlayerStr = "nil"

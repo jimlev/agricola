@@ -66,7 +66,7 @@ function Timetable:applyTurn(turn)
             table.insert(summary, string.format("+%d %s", qty, res))
         end
     end
-print("Timetable:applyTurn "..#summary or "|")
+		print("Timetable:applyTurn "..#summary or "|")
     return summary
 end
 

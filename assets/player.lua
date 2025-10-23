@@ -59,6 +59,7 @@ function Player:addResource(resource, amount)
 	self:updateInventory()
 end
 
+
 --  costs = { material = 5, reed = 2 } par exemple
 function Player:canAfford(costs)
     if not costs or type(costs) ~= "table" then
@@ -169,6 +170,7 @@ function Player:showMePlayer(event)
 	end
 end
 
+
 function Player:hideMePlayer(event)
 	if self.tokenIsPressed then
 		self.inventaire:setVisible(false)
@@ -207,7 +209,7 @@ function Player:initInventory()
 	
 	self.inventoryCounters = {}
 	
- local resourceOrder = {"wood","clay","stone","reed","grain","vegetable","sheep","pig","cattle","food"}
+	local resourceOrder = {"wood","clay","stone","reed","grain","vegetable","sheep","pig","cattle","food"}
 
 	for i, resourceName in ipairs(resourceOrder) do
 	local counter = TextField.new(basefont, "0")
@@ -259,13 +261,23 @@ function Player:spawnPlayerBoard()
 	table.insert(self.converters, majorI_one)
 end
 
+function Player:neededFoodCount() -- TODO gérer l'aggrandissement de famille de fin de tour
+	local foodQty
+	if gameManager.playerCount == 1 then
+		foodQty = 3 * self.familySize
+	else
+		foodQty = 2 * self.familySize
+	end
+	
+	return foodQty
+end	
+
 -- ########################## HELPERS CONVERTER
 
 function Player:updateConverterBtn()
 	for i = 1, #self.converters do
 		self.converters[i]:updateButtons()
 	end
-	
 end
 
 function Player:resetConverters()
@@ -291,43 +303,32 @@ end
 -- !#!#!#!#!#!#!#!#!#!#!#  HELPERS DES RECOLTES   !#!#!#!#!#!#!#!#!#!#!#
 -- !#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!
 
-
 -- Retourne une phrase récapitulative de la récolte
 function Player:getHarvestSummary()
-    local summary = {}
 
-    -- Champs de blé
-    if self.fields and #self.fields > 0 then
-        local totalGrain = 0
-        for _, field in ipairs(self.fields) do
-            if field.crop == "grain" and field.stock > 0 then
-                totalGrain = totalGrain + field.stock
-                self:addResource("grain", field.stock)
-                field.stock = 0
+    local summary = { grain = 0, vegetable = 0 }
+
+    for row = 1, #self.board.boxes do
+        for col = 1, #self.board.boxes[row] do
+            local box = self.board.boxes[row][col]
+            local seedType, production = box:harvest()
+            if seedType and summary[seedType] then
+                summary[seedType] = summary[seedType] + production
             end
         end
-        if totalGrain > 0 then
-            table.insert(summary, string.format("+%d grain", totalGrain))
-        end
     end
 
-    -- Champs de légumes
-    local totalVeg = 0
-    for _, field in ipairs(self.fields or {}) do
-        if field.crop == "vegetable" and field.stock > 0 then
-            totalVeg = totalVeg + field.stock
-            self:addResource("vegetable", field.stock)
-            field.stock = 0
-        end
-    end
-    if totalVeg > 0 then
-        table.insert(summary, string.format("+%d légumes", totalVeg))
-    end
-
-    if #summary == 0 then
+    if summary.grain == 0 and summary.vegetable == 0 then
         return "Rien à récolter cette saison."
     else
         return table.concat(summary, " / ")
     end
 end
 
+function Player:getFoodSummary()
+	return "à table"
+end
+
+function Player:getReproSummary()
+	return "233"
+end

@@ -142,13 +142,15 @@ function GridBox:plantSeed()
 end
 
 function GridBox:harvest()
-    if self.myType ~= "field" or not self.mySeed then return 0 end
+    if self.myType ~= "field" or not self.isGrowing then return 0 end
     
-    local production = self.mySeedAmount
-    self.mySeed = nil
-    self.mySeedAmount = 0
+    local production = 1
+    local seedType = self.mySeed
+    self.mySeedAmount = self.mySeedAmount - 1
+	if self.mySeedAmount == 0 then self.isGrowing = false end
+		
     self:updateState()
-    return production
+    return seedType, production
 end
 
 function GridBox:canPlant()
