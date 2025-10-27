@@ -23,7 +23,7 @@ function GridBox:init(col, row, player)
 	
 	self.myType = "empty" -- "field", "pasture", "house"
 		self.mySeed = nil -- "ble", "vegetable" ou nil (default)
-		self.isGrowing = false  -- indique qu'un champ est deja planté 
+		self.isGrowing = false  -- indique qu'un champ est ou n'est pas deja planté 
 		self.mySeedAmount = 0 -- nb de graines restantes 
 		self.mySpecies = nil -- "sheep", "boar", "cattle" 
 		self.animals = 0 -- nb d’animaux dans la case 
@@ -92,6 +92,7 @@ function GridBox:calculateState()
     
     elseif self.myType == "field" then
         if not self.mySeed then
+			self.isGrowing = false
             return "laboure"  -- champ labouré vide
         elseif self.mySeed == "grain" then
             return "ble"      -- peu importe la quantité
@@ -133,6 +134,7 @@ end
 
 
 -- Helpers pour la gestion des champs
+
 --function GridBox:plantSeed(seedType, amount)
 function GridBox:plantSeed()	
     if self.myType ~= "field" then return false end
@@ -147,9 +149,13 @@ function GridBox:harvest()
     local production = 1
     local seedType = self.mySeed
     self.mySeedAmount = self.mySeedAmount - 1
-	if self.mySeedAmount == 0 then self.isGrowing = false end
+	if self.mySeedAmount == 0 then 
+		self.isGrowing = false  
+		self.mySeed = nil 
+	end
 		
     self:updateState()
+	print("gridBox harvest: "..self.row.."|"..self.col.." >>> ", seedType, production)
     return seedType, production
 end
 

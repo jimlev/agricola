@@ -329,7 +329,7 @@ function RscConverter:createVisualUI(model)
 		
 	elseif model == 4 then -- le puit (pas d'interaction)
 
-		converterBase = Bitmap.new(Texture.new("gfx/major/converter/model4_base.png"))
+		converterBase = Bitmap.new(Texture.new("gfx/major/converter/model4_ic_base.png"))
 		totalFoodConvert:setVisible(false)
 
 	end

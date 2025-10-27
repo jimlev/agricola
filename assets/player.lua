@@ -18,15 +18,15 @@ function Player:init(id, name, color, humanOrNot)
 	self.hasPlayedThisRound = false
     -- Ressources
     self.resources = {
-        wood = 20,
-        clay = 32,
-        stone = 10,
-		reed = 4,
-        grain = 5,
-        vegetable = 2,
-        sheep = 2,
-        pig = 2,
-        cattle = 2,
+        wood = 0,
+        clay = 0,
+        stone = 0,
+		reed = 0,
+        grain = 0,
+        vegetable = 1,
+        sheep = 0,
+        pig = 0,
+        cattle = 0,
         food = 0  -- Démarrage avec 2 nourritures		
     }
 	self.majorCard = {0}
@@ -314,6 +314,7 @@ function Player:getHarvestSummary()
             local seedType, production = box:harvest()
             if seedType and summary[seedType] then
                 summary[seedType] = summary[seedType] + production
+				self:addResource(seedType, production)
             end
         end
     end
@@ -321,7 +322,7 @@ function Player:getHarvestSummary()
     if summary.grain == 0 and summary.vegetable == 0 then
         return "Rien à récolter cette saison."
     else
-        return table.concat(summary, " / ")
+        return string.format("Vous obtenez: %d blé et %d légume", summary.grain, summary.vegetable)
     end
 end
 

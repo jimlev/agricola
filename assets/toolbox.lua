@@ -287,14 +287,14 @@ function getRoundInfo(currentRound)
             local turnsUntilHarvest = harvestRound - currentRound + 1  -- +1 pour inclure le tour actuel
             
             if currentRound == harvestRound then
-                t1 = string.format("Période %d - RÉCOLTE !", currentPeriod)
-                t2 = "Phase de récolte en cours"
+                t1 = string.format("Période %d, tour %d", currentPeriod, currentRound)
+                t2 = "Récolte à la fin du tour!"
             elseif currentRound == 14 then
                 t1 = "Dernier tour !" 
                 t2 = "Récolte finale"
             elseif turnsUntilHarvest == 1 then
                 t1 = string.format("Période %d, tour %d", currentPeriod, currentRound)
-                t2 = "Dernier tour avant récolte !"
+                t2 = "Dernier tour avant la récolte!"
             else
                 t1 = string.format("Période %d, tour %d", currentPeriod, currentRound)
                 t2 = string.format("Récolte dans %d tours", turnsUntilHarvest)

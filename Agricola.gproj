@@ -163,6 +163,7 @@
                 <file name="assets/gfx/major/converter/model3_3_base.png"/>
                 <file name="assets/gfx/major/converter/model3_3_btn1.png"/>
                 <file name="assets/gfx/major/converter/model4_base.png"/>
+                <file name="assets/gfx/major/converter/model4_ic_base.png"/>
                 <file name="assets/gfx/major/converter/valid_foodConv.png"/>
             </folder>
         </folder>

@@ -837,10 +837,12 @@ end
 	
 function gameManager:harvestTime_phaseOne(player)
      -- Étape 1 : Récolte champs
-    player.board:centerOnX(800)
-    self.ui:queueInfo("Récolte des plantations", player:getHarvestSummary(), 3)
-
-    self:harvestTime_phaseTwo(player)
+	player.board:setVisible(true)
+    player.board:centerOnX(200)
+    
+    self.ui:queueInfo("Récolte des champs :", player:getHarvestSummary(), 3, function()
+        self:harvestTime_phaseTwo(player)
+    end)
 end
 
 function gameManager:harvestTime_phaseTwo(player)
@@ -856,7 +858,7 @@ function gameManager:harvestTime_phaseThree(player)
      -- Étape 3 : Naissance animaux
     player.board:centerOnX(800)
     self.ui:queueInfo("Naissance chez vos animaux", "Vous obtenez : " .. player:getReproSummary(), 5)
-
+	-- player.board:setVisible(false)
     self:endHarvestPhase()
 end
 

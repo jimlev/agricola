@@ -170,6 +170,8 @@ function UI:processQueue()
     self.isDisplayingInfo = true
 	
 	local nextMsg = table.remove(self.infoQueue, 1)
+	self.currentInfo = nextMsg
+	
 	local popup = self:displayInfo(nextMsg.title, nextMsg.text)
 
     -- Lancer le timer de fermeture automatique
@@ -184,6 +186,12 @@ function UI:hideInfoPanel(popup)
         self.currentInfoTimer = nil
     end
     self:killThatPopup(popup) -- on kill la popup
+	
+	-- ✅ Appeler le callback du message courant, si présent
+    if self.currentInfo and self.currentInfo.callback then
+        pcall(self.currentInfo.callback)  -- pcall = protection contre erreurs
+    end
+    self.currentInfo = nil
 	
     self.isDisplayingInfo = false
 	gameManager.gameIsPaused = false -- je débloque le gameplay
@@ -208,9 +216,13 @@ end
 -- *=**=**=**=**=**=**=**=**=**=**=*
 -- *=**=**=*  SIDE FCT  *=**=**=**=*
 
-function UI:queueInfo(title, text, duration)
-    table.insert(self.infoQueue, { title = title, text = text, duration = duration or 3 })
-
+function UI:queueInfo(title, text, duration, callback)
+	table.insert(self.infoQueue, {
+        title = title,
+        text = text,
+        duration = duration or 3,
+        callback = callback -- optionnel
+    })
     self:processQueue()
 end
 
