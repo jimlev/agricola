@@ -1,7 +1,10 @@
 
 local numberFont = TTFont.new("fonts/K2D-Bold.ttf",28)
+local basefont = TTFont.new("fonts/GentiumPlus-Bold.ttf",24)
+local titlefont = TTFont.new("fonts/K2D-Bold.ttf",72)
+local regularFont = TTFont.new("fonts/K2D-Regular.ttf",36)
 
-local btnImg = {"gfx/UI/validBtn.png","gfx/UI/rollbackBtn.png","gfx/UI/cancelBtn.png","gfx/UI/continueBtn.png"}
+local btnImg = {"gfx/UI/validBtn.png","gfx/UI/rollbackBtn.png","gfx/UI/cancelBtn.png","gfx/UI/continueBtn.png","gfx/UI/settings.png",}
 
 btn = Core.class(Sprite)
 
@@ -24,7 +27,12 @@ function btn:init(fct)
 		self.imgPath = 4
 		self.event = function() gameManager:continueAction() end
 		self.name = "Continue button"	
+	elseif fct == "settings" then
+		self.imgPath = 5
+		self.event = function() gameManager:showSettings() end
+		self.name = "Settings"	 
 	end
+	
 	
 	local bouton = Bitmap.new(Texture.new(btnImg[self.imgPath]))
 		bouton:setAnchorPoint(0.5,0.5)
@@ -265,9 +273,47 @@ function createViewCardmarketBtn()
 		end
 	end
 	btnViewCardMarket:addEventListener(Event.MOUSE_DOWN, onClick, btnViewCardMarket)
-	
 end
 
+function updateTurnTracker()
+	
+	local period = {1,1,1,1,2,2,2,3,3,4,4,5,5,6}
+	local tt = gameManager.ui.tracker
+	local round = gameManager.currentRound
+	tt.t1:setText("Période "..period[round])
+	tt.t2:setText("Tour "..round)
+	local _,t3t = getRoundInfo(round)
+	tt.t3:setText(t3t)	
+end	
+
+function setTurnTracker()
+	local tracker = Bitmap.new(Texture.new("gfx/UI/turnTracker.png"))
+		gameManager.ui:addChild(tracker)
+		gameManager.ui.tracker = tracker
+		tracker:setPosition(720, gTop)
+		tracker:setAnchorPoint(0.26, 0)
+		
+	local t1 = TextField.new(basefont, "Période 1")
+		t1:setAnchorPoint(0,1)
+		t1:setTextColor(0xffffff)
+		t1:setPosition(0,82)
+		tracker:addChild(t1)
+		tracker.t1 = t1
+    
+    local t2 = TextField.new(regularFont, "Tour 3")
+		t2:setAnchorPoint(0,1)
+		t2:setTextColor(0xffffff)
+		t2:setPosition(0,122)
+		tracker:addChild(t2)	
+		tracker.t2 = t2
+		
+	local t3 = TextField.new(basefont, "4 tours avant la récolte")
+		t3:setAnchorPoint(0,1)
+		t3:setTextColor(0xffffff)
+		t3:setPosition(0,138)
+		tracker:addChild(t3)	
+		tracker.t3 = t3
+end
 
 function getRoundInfo(currentRound)
     local harvestRounds = {4, 7, 9, 11, 13, 14}

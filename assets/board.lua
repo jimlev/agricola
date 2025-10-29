@@ -22,7 +22,6 @@ function board:init()
 		self.composition:setAnchorPoint(0.5, 0.5)
 		self:addChild(self.composition)
 		self.composition:setPosition(W/2, H/2)	
-	
 
     self.backLayer = Bitmap.new(Texture.new("gfx/plateau.jpg"))
 		self.backLayer:setAnchorPoint(0.5, 0.5)
@@ -94,7 +93,6 @@ function board:onTouchesEnd(event)
     event:stopPropagation()
 end
 
-
 function board:centerOnSign(sign)
     if not sign or not sign:getParent() then return end
 
@@ -113,7 +111,6 @@ function board:centerOnSign(sign)
     elseif targetX > self.maxX then
         targetX = self.maxX
     end
-
 
     -- Décalage total à appliquer (comme si on avait fait un drag)
     local dx = targetX - self.composition:getX()

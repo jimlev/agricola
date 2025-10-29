@@ -30,7 +30,6 @@ Menu Settings
 - player.board.isPlayable : blocage des interactions sur le terrain de la ferme du joueur
 
 
-
 +== FLOW DE GESTION DES ACTIONS +++  par sécu, le flow se déroule sur un snapshot du joueur.
 1. initPendingCreation() a défini le pendingAction > state suivant   
 2. pendingDispatcher() : affiche UI. noSpecial / Special >>> handleSpecialAction
@@ -79,6 +78,7 @@ gameManager = {
     playerList    = {},
     gameBoard     = nil,
     ui            = nil,
+	showingSettings = false,
     
     -- Action en cours
     pendingAction = nil,  -- {playerId, signId, meeple, rewards}
@@ -171,7 +171,8 @@ function gameManager:setupGame()
     local gameBoard = board.new()
     stage:addChild(gameBoard)
     stage.gameBoard = gameBoard
-	
+	-- stage.gameBoard:setScale(.64)
+	-- stage.gameBoard:setY(36)
 	createMeepleBank()
 		
 	local farmLayer = Sprite.new()
@@ -199,6 +200,11 @@ function gameManager:setupGame()
 	self:createSigns()
 	
     stage:addChild(self.ui)
+	setTurnTracker()
+	local settingsBtn = btn.new("settings")
+		settingsBtn:setPosition(gRight-120, gTop+80)
+		self.ui:addChild(settingsBtn)
+		self.ui.settingsBtn = settingsBtn
 
     self:changeState(GAME_STATES.ROUND_INIT)
 end
@@ -210,7 +216,7 @@ function gameManager:initNewRound()
 	self.ui:queueInfo(t1, t2, 7)
 	-- au cas où un joueur ait choisi l'action 'first_player'
 	self:reorderPlayers()	
-		
+	updateTurnTracker()	
     -- Dévoiler les nouvelles actions dispo (règle Agricola)
 	local newSign = sign.revealNewSigns(self.currentRound)
 	table.insert(self.signs, newSign)
@@ -255,8 +261,7 @@ function gameManager:startPlayerTurn()
 			local summaryText = table.concat(summary, " / ")
 
 			self.ui:queueInfo(message, summaryText, 4)
-
-		end		
+		end
 	
 		if self.meepleInPlay == nil then  --c'est un vrai debut de tour, pas un rollback
 			player:pickMeeple()   --créé le pointer du meeple qui va etre joué > gameManager.meepleInPlay
@@ -849,20 +854,85 @@ function gameManager:harvestTime_phaseTwo(player)
      -- Étape 2 : Nourrir la famille
     player.board:centerOnX(2800)
 	
-    self.ui:queueInfo("Nourriture nécessaire "..player:neededFoodCount(), "Vous avez " .. player:getFoodSummary(), 5)
+	self.ui:queueInfo("Vous avez besoin de :"..player:neededFoodCount().." repas",player:getFoodSummary(), 9, function()
+        self:letsConvertFood(player)
+    end)
+end
 
-    self:harvestTime_phaseThree(player)
+function gameManager:letsConvertFood(player)
+    local foodNeeded = player:neededFoodCount()
+    local foodAvailable = player.resources.food
+    
+    local boutonTexture
+    local mendicityCount = 0
+    
+    if foodAvailable < foodNeeded then
+        boutonTexture = Texture.new("gfx/UI/mendicityBtn.png")
+        mendicityCount = foodNeeded - foodAvailable
+    else
+        boutonTexture = Texture.new("gfx/UI/continueBtn.png")
+    end
+    
+    local bouton = Bitmap.new(boutonTexture)
+    bouton:setAnchorPoint(1, 0.5)
+    bouton:setPosition(gRight - 80, gBottom / 2)
+    self.ui:addChild(bouton)
+    self.ui.bouton = bouton
+
+    if mendicityCount > 0 then
+        local numberFont = TTFont.new("fonts/K2D-Bold.ttf", 48)
+        local count = TextField.new(numberFont, mendicityCount .. " x")
+        count:setAnchorPoint(0, 0.5)
+        count:setTextColor(0xc70404)
+        count:setPosition(-360, 42)
+        bouton:addChild(count)
+        bouton.count = count
+    end
+
+    bouton:addEventListener(Event.MOUSE_DOWN, function(event)
+        if bouton:hitTestPoint(event.x, event.y) then
+            event:stopPropagation()
+            bouton:getParent():removeChild(bouton)
+            self:harvestTime_phaseThree(player)
+        end
+    end)
+end
+
+function gameManager:old_letsConvertFood(player)
+	local bouton = Bitmap.new(Texture.new("gfx/UI/mendicityBtn.png"))
+		bouton:setAnchorPoint(1,0.5)
+		bouton:setPosition(gRight-80, gBottom/2)
+		self.ui:addChild(bouton)
+		self.ui.bouton = bouton
+	
+	local numberFont = TTFont.new("fonts/K2D-Bold.ttf",48)
+	local count = TextField.new(numberFont, "3 x")
+		count:setAnchorPoint(0,0.5)
+		count:setTextColor(0xc70404)
+		count:setPosition(-360,42)	
+		bouton:addChild(count)
+		bouton.count = count	
+
+	bouton:addEventListener(Event.MOUSE_DOWN, function(event)
+        if bouton:hitTestPoint(event.x, event.y) then
+            event:stopPropagation()
+			bouton:getParent():removeChild(bouton)
+			self:harvestTime_phaseThree(player)
+        end
+    end)
+
 end
 
 function gameManager:harvestTime_phaseThree(player)
-     -- Étape 3 : Naissance animaux
+    -- Étape 3 : Naissance animaux
     player.board:centerOnX(800)
-    self.ui:queueInfo("Naissance chez vos animaux", "Vous obtenez : " .. player:getReproSummary(), 5)
-	-- player.board:setVisible(false)
-    self:endHarvestPhase()
+	self.ui:queueInfo("Naissance chez vos animaux",player:getReproSummary(), 5, function()
+        self:endHarvestPhase(player)
+    end)
 end
 
-function gameManager:endHarvestPhase()
+function gameManager:endHarvestPhase(player)
+	player.board:setVisible(false)
     print("🌾 Fin de la phase de récolte")
     -- Retour au cycle normal
     self:changeState(GAME_STATES.ROUND_INIT)
@@ -885,7 +955,6 @@ function gameManager:showDuoChoicePopup()
     -- On crée la popup avec les labels et callbacks
     self.actionPopup = self.ui:createChoicePopup(action1, fct1, action2, fct2)
 end
-
 
 function gameManager:displayValidButton()
 	if not self.pendingAction.hasValidationButton then
@@ -932,7 +1001,6 @@ function gameManager:getSignById(id)
 end
 
 function gameManager:applyRewards(player, rewards)
-	
     for resource, amount in pairs(rewards) do
         if resource ~= "special" then
             player:addResource(resource, amount)
@@ -991,6 +1059,20 @@ function gameManager:getActivePlayer()
     return player, false
 end
 
+function gameManager:showSettings()
+	local player = self:getActivePlayer()
+	if self.showingSettings == false then
+		print("SHOW SETTINGS SCREEN")
+		player.board.isPlayable = false
+		self.gameIsPaused = true
+		self.showingSettings = true 
+	elseif self.showingSettings == true then
+		print("HIDE SETTINGS SCREEN")
+		player.board.isPlayable = true
+		self.gameIsPaused = false
+		self.showingSettings = false
+	end
+end
 
 -- clone de player
 function gameManager:createPlayerSnapshot(player)
@@ -1099,7 +1181,7 @@ function gameManager:commitSnapshot(player, clone)
     originalPlayer:updateInventory()
     
 	--originalPlayer.board.boxes = table.clone(clone.board.boxes, nil, true)
-	    -- IMPORTANT : Synchroniser les états des GridBox sans remplacer les objets
+	-- IMPORTANT : Synchroniser les états des GridBox sans remplacer les objets
     for row = 1, #originalPlayer.board.boxes do
         for col = 1, #originalPlayer.board.boxes[row] do
             local originalGridBox = originalPlayer.board.boxes[row][col]

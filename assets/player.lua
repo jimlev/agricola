@@ -37,6 +37,7 @@ function Player:init(id, name, color, humanOrNot)
     self.house = {rscType = "wood", rooms = 3}
     self.fields = 0
     self.pastures = 0
+	self.malusCards = 0
     
     -- Meeples disponibles
     self.availableMeeples = self.familySize  -- Démarre avec 2, peut aller jusqu'à 5
@@ -327,7 +328,15 @@ function Player:getHarvestSummary()
 end
 
 function Player:getFoodSummary()
-	return "à table"
+	local foodCount = self.resources.food
+	local foodNeed = self:neededFoodCount()
+	
+	if foodCount >= foodNeed then
+		return string.format("Vous avez %d repas disponibles", foodCount)
+	else
+		return string.format("Il manque %d repas,\nvous allez devoir prendre %d cartes Mendicité", foodNeed - foodCount, foodNeed - foodCount)
+	end
+
 end
 
 function Player:getReproSummary()

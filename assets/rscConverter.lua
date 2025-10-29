@@ -116,8 +116,6 @@ end
 function RscConverter:onPressConversion(rscKind)
     local p, isSnapshot = gameManager:getActivePlayer()
 
-print(self.name, self.useCount)
-
     -- montrer ok / cancel
     self.okButton:setVisible(true)
     self.cancelButton:setVisible(true)
@@ -273,7 +271,9 @@ function RscConverter:createVisualUI(model)
 	
 	if model == 0 then -- feu de camp du depart
 		converterBase = Bitmap.new(Texture.new("gfx/major/converter/model0_1_base.png"))
-		
+		local picIcon = Bitmap.new(Texture.new("gfx/major/converter/model0_1_pic_base.png"))
+		converterBase:addChild(picIcon)
+		picIcon:setPosition(-150,-150)
 		makeButton("gfx/major/converter/model0_btn1.png", 0, -242, "grain")
 		makeButton("gfx/major/converter/model1_btn2.png", 124, -242, "vegetable")
 		

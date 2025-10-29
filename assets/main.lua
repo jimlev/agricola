@@ -35,6 +35,10 @@ function startGame()
 		if e.keyCode == KeyCode.T then  -- touche D pour Debug
 			p.timetable:debugPrint()
 		end
+		if e.keyCode == KeyCode.B then  -- touche D pour Debug
+			gameManager:letsConvertFood(gameManager:getActivePlayer())
+		end
+
 	end)
 end
 startGame()

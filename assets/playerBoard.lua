@@ -132,8 +132,6 @@ function PlayerBoard:isItPlayable()
 	return self.isPlayable  and self:isVisible() 
 end
 
-
-
 --[[
 =================================================================================
 =============================  GESTION DES BOXES  ===============================
@@ -148,7 +146,7 @@ function PlayerBoard:cycleBoxSeed(col, row, snapshot)
     local grainAvailable = self.player.resources.grain
     local vegetableAvailable = self.player.resources.vegetable
     
---    print(" ")
+ --   print(" ")
  --   print("cycleBoxSeed - État actuel:", currentSeed)
  --   print("Ressources joueur - Grain:", grainAvailable, "Légumes:", vegetableAvailable)
     

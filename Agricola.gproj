@@ -40,7 +40,6 @@
         <file name="assets/gfx/plateau_fore.png"/>
         <file name="assets/gfx/playerBoardBG.jpg"/>
         <file name="assets/gfx/positron.png"/>
-        <file name="assets/gfx/testBG3.png"/>
         <file name="assets/gfx/topview.jpg"/>
         <folder name="signs">
             <file name="assets/gfx/signs/grey_basic_bg1.png"/>
@@ -146,6 +145,8 @@
                 <file name="assets/gfx/major/converter/boutonCarre_hotspot124.png"/>
                 <file name="assets/gfx/major/converter/cancel_foodConv.png"/>
                 <file name="assets/gfx/major/converter/model0_1_base.png"/>
+                <file name="assets/gfx/major/converter/model0_1_ic_base.png"/>
+                <file name="assets/gfx/major/converter/model0_1_pic_base.png"/>
                 <file name="assets/gfx/major/converter/model0_btn1.png"/>
                 <file name="assets/gfx/major/converter/model1_1_base.png"/>
                 <file name="assets/gfx/major/converter/model1_2_base.png"/>
@@ -155,6 +156,7 @@
                 <file name="assets/gfx/major/converter/model1_btn4.png"/>
                 <file name="assets/gfx/major/converter/model1_btn5.png"/>
                 <file name="assets/gfx/major/converter/model2_1_base.png"/>
+                <file name="assets/gfx/major/converter/model2_1_pic_base.png"/>
                 <file name="assets/gfx/major/converter/model2_2_base.png"/>
                 <file name="assets/gfx/major/converter/model3_1_base.png"/>
                 <file name="assets/gfx/major/converter/model3_1_btn1.png"/>
@@ -184,6 +186,7 @@
             <file name="assets/gfx/UI/greenP_Token.png"/>
             <file name="assets/gfx/UI/hotspot_640132.png"/>
             <file name="assets/gfx/UI/hotspot_640132g.png"/>
+            <file name="assets/gfx/UI/mendicityBtn.png"/>
             <file name="assets/gfx/UI/pinkInv_focus.png"/>
             <file name="assets/gfx/UI/pinkP_Token.png"/>
             <file name="assets/gfx/UI/playerModule.png"/>
@@ -191,8 +194,11 @@
             <file name="assets/gfx/UI/purpleP_Token.png"/>
             <file name="assets/gfx/UI/rollbackBtn.png"/>
             <file name="assets/gfx/UI/roundHotspot.png"/>
+            <file name="assets/gfx/UI/settings.png"/>
             <file name="assets/gfx/UI/turnPanel.png"/>
+            <file name="assets/gfx/UI/turnTracker.png"/>
             <file name="assets/gfx/UI/validBtn.png"/>
+            <file name="assets/gfx/UI/validRedBtn.png"/>
             <file name="assets/gfx/UI/yellowInv_focus.png"/>
             <file name="assets/gfx/UI/yellowP_Token.png"/>
         </folder>

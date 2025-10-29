@@ -1,7 +1,7 @@
 
-local basefont = TTFont.new("fonts/GentiumPlus-Bold.ttf",48)
-local titlefont = TTFont.new("fonts/K2D-Bold.ttf",78)
-local regularFont = TTFont.new("fonts/K2D-Regular.ttf",50)
+local basefont = TTFont.new("fonts/GentiumPlus-Bold.ttf",30)
+local titlefont = TTFont.new("fonts/K2D-Bold.ttf",72)
+local regularFont = TTFont.new("fonts/K2D-Regular.ttf",48)
 
 UI = Core.class(Sprite)
 
@@ -69,7 +69,7 @@ function UI:createChoicePopup(action1, fct1, action2, fct2)
 		hs1.event = fct1
 		hs1:addEventListener(Event.MOUSE_UP, self.onMouseUp, hs1)
 		
-	local title1 = TextField.new(basefont, action1.title)
+	local title1 = TextField.new(regularFont, action1.title)
 		title1:setAnchorPoint(0.5,0.5)
 		title1:setTextColor(0x4b2c31)
 		--title1:setPosition(-104,-18)	
@@ -84,7 +84,7 @@ function UI:createChoicePopup(action1, fct1, action2, fct2)
 		hs2.event = fct2
 		hs2:addEventListener(Event.MOUSE_UP, self.onMouseUp, hs2)
 		
-	local title2 = TextField.new(basefont, action2.title)
+	local title2 = TextField.new(regularFont, action2.title)
 		title2:setAnchorPoint(.5,.5)
 		title2:setTextColor(0x4b2c31)
 		--title2:setPosition(-104,-18)	
