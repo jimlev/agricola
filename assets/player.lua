@@ -23,7 +23,7 @@ function Player:init(id, name, color, humanOrNot)
         stone = 0,
 		reed = 0,
         grain = 0,
-        vegetable = 1,
+        vegetable = 3,
         sheep = 0,
         pig = 0,
         cattle = 0,
@@ -33,7 +33,7 @@ function Player:init(id, name, color, humanOrNot)
 	self.converters = {}
 	self.pendingMajorCardIndex = nil
     -- Progression
-    self.familySize = 2 -- total quand la famille s'aggrandit
+    self.familySize = 1 -- total quand la famille s'aggrandit
     self.house = {rscType = "wood", rooms = 3}
     self.fields = 0
     self.pastures = 0
@@ -246,6 +246,12 @@ function Player:updateInventory()
 		
 		if resourceName == 'food' and stage.foodCounter then 
 			updateMeepleBank(self)
+			
+			if gameManager.currentState == "HARVEST" then -- le bouton mendicité est affiché
+				if gameManager.ui.bouton then
+				gameManager.ui.bouton:updateButtonState()
+				end
+			end
 		end
 		counter:setText(tostring(self.resources[resourceName] or 0))
     end
@@ -306,7 +312,6 @@ end
 
 -- Retourne une phrase récapitulative de la récolte
 function Player:getHarvestSummary()
-
     local summary = { grain = 0, vegetable = 0 }
 
     for row = 1, #self.board.boxes do
@@ -339,6 +344,30 @@ function Player:getFoodSummary()
 
 end
 
-function Player:getReproSummary()
-	return "233"
+function Player:getReproSummary() -- TODO : placement à implémenter plus tard
+	local newSheep, newPig, newCattle = 0, 0, 0
+
+	if self.resources.sheep >= 2 then 
+		self.resources.sheep = self.resources.sheep + 1
+		newSheep = 1
+	end
+	if self.resources.pig >= 2 then 
+		self.resources.pig = self.resources.pig + 1
+		newPig = 1
+	end
+	if self.resources.cattle >= 2 then 
+		self.resources.cattle = self.resources.cattle + 1
+		newCattle = 1
+	end
+
+	if newSheep + newPig + newCattle > 0 then
+		local summaryParts = {}
+		if newSheep > 0 then table.insert(summaryParts, newSheep .. " mouton" .. (newSheep > 1 and "s" or "")) end
+		if newPig > 0 then table.insert(summaryParts, newPig .. " cochon" .. (newPig > 1 and "s" or "")) end
+		if newCattle > 0 then table.insert(summaryParts, newCattle .. " bœuf" .. (newCattle > 1 and "s" or "")) end
+		
+		return "Naissance : " .. table.concat(summaryParts, ", ")
+	else
+		return "Pas de naissance chez vos animaux !"
+	end
 end

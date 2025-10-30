@@ -297,7 +297,7 @@ function gameManager:executeAction()
 	-- on confirme les changements d'états des Box du playerBoard
 	self.ui:killConfirmPopup()
 	snapshot.board.isPlayable = false -- sécu car snapshot va être kill
-	gameManager.bakingTime = false
+	self.bakingTime = false
 	self.inBuyCardMode = false -- les cartes ne sont plus achetables
 	
 	-- je confirme l'achat de celle sélectionnée et je crée son widget
@@ -425,7 +425,7 @@ function gameManager:cancelAction()
     
     -- rollback sur le sign
     sign:cancelAction()
-	gameManager.bakingTime = false
+	self.bakingTime = false
 
     -- rollback du meeple
     action.meeple:returnHome()
@@ -451,7 +451,7 @@ function gameManager:cancelAction()
 			self.currentZoomedCard = nil
 		end
 		
-		gameManager.currentZoomedCard = nil
+		self.currentZoomedCard = nil
         self.marketLayer:setVisible(false)
     end
 	
@@ -734,7 +734,7 @@ end
 function gameManager:beginBakingAction(player)   -- "cuisson"
     player.board:setVisible(true)
 	player.board:centerOnX(2600)
-	gameManager.bakingTime = true
+	self.bakingTime = true
 	player:updateConverterBtn()
 	self:displayValidButton()
 end
@@ -745,8 +745,8 @@ function gameManager:beginBuyImprovement(player)   -- "Amelioration"
     player.board:setVisible(true) 
 	player.board.isPlayable = false
 	-- j'active le mode achat des cartes (pour que le bouton Continue puisse s'afficher)
-	gameManager.inBuyCardMode = true
-	gameManager.marketLayer:setVisible(true)	
+	self.inBuyCardMode = true
+	self.marketLayer:setVisible(true)	
 	self:updateMajorCardsMarket()
 
 end
@@ -843,6 +843,7 @@ end
 function gameManager:harvestTime_phaseOne(player)
      -- Étape 1 : Récolte champs
 	player.board:setVisible(true)
+	player.board:setAlpha(.7)
     player.board:centerOnX(200)
     
     self.ui:queueInfo("Récolte des champs :", player:getHarvestSummary(), 3, function()
@@ -855,81 +856,103 @@ function gameManager:harvestTime_phaseTwo(player)
     player.board:centerOnX(2800)
 	
 	self.ui:queueInfo("Vous avez besoin de :"..player:neededFoodCount().." repas",player:getFoodSummary(), 9, function()
-        self:letsConvertFood(player)
+        self:handleHarvestConversion(player)
     end)
 end
 
-function gameManager:letsConvertFood(player)
-    local foodNeeded = player:neededFoodCount()
-    local foodAvailable = player.resources.food
-    
-    local boutonTexture
-    local mendicityCount = 0
-    
-    if foodAvailable < foodNeeded then
-        boutonTexture = Texture.new("gfx/UI/mendicityBtn.png")
-        mendicityCount = foodNeeded - foodAvailable
-    else
-        boutonTexture = Texture.new("gfx/UI/continueBtn.png")
-    end
-    
-    local bouton = Bitmap.new(boutonTexture)
-    bouton:setAnchorPoint(1, 0.5)
-    bouton:setPosition(gRight - 80, gBottom / 2)
-    self.ui:addChild(bouton)
-    self.ui.bouton = bouton
+function gameManager:handleHarvestConversion(player)
 
-    if mendicityCount > 0 then
-        local numberFont = TTFont.new("fonts/K2D-Bold.ttf", 48)
-        local count = TextField.new(numberFont, mendicityCount .. " x")
-        count:setAnchorPoint(0, 0.5)
-        count:setTextColor(0xc70404)
-        count:setPosition(-360, 42)
-        bouton:addChild(count)
-        bouton.count = count
-    end
+    local bouton = Bitmap.new(Texture.new("gfx/positron.png"))
+		bouton:setAnchorPoint(1, 0.5)
+		bouton:setPosition(gRight - 80, gBottom / 2)
+		self.ui:addChild(bouton)
+		self.ui.bouton = bouton
+		self.ui.bouton.mendicityCount = 0
 
+    local numberFont = TTFont.new("fonts/K2D-Bold.ttf", 48)
+    local count = TextField.new(numberFont, "")
+    count:setAnchorPoint(0, 0.5)
+    count:setTextColor(0xc70404)
+    count:setPosition(-360, 42)
+    bouton:addChild(count)
+    bouton.count = count
+
+    -- fonction interne de mise à jour
+	function bouton:updateButtonState()
+		local foodNeeded = player:neededFoodCount()
+		local foodAvailable = player.resources.food or 0
+
+		if foodAvailable < foodNeeded then
+			self:setTexture(Texture.new("gfx/UI/mendicityBtn.png"))
+			self.mendicityCount = foodNeeded - foodAvailable
+			self.count:setText(self.mendicityCount .. " x")
+			self.count:setVisible(true)
+		else
+			self:setTexture(Texture.new("gfx/UI/validBtn.png"))
+			self.count:setVisible(false)
+		end
+	end
+
+    -- première mise à jour à la création
+    bouton:updateButtonState()
+
+    -- clic pour passer à la phase suivante
     bouton:addEventListener(Event.MOUSE_DOWN, function(event)
         if bouton:hitTestPoint(event.x, event.y) then
             event:stopPropagation()
-            bouton:getParent():removeChild(bouton)
+			player.malusCards = player.malusCards + bouton.mendicityCount
+			player.resources.food = player.resources.food -  bouton.mendicityCount
+			player:updateInventory()
+			
+            self.ui:removeChild(bouton)
+			self.ui.bouton = nil
+
             self:harvestTime_phaseThree(player)
         end
     end)
-end
+end 
 
-function gameManager:old_letsConvertFood(player)
-	local bouton = Bitmap.new(Texture.new("gfx/UI/mendicityBtn.png"))
-		bouton:setAnchorPoint(1,0.5)
-		bouton:setPosition(gRight-80, gBottom/2)
-		self.ui:addChild(bouton)
-		self.ui.bouton = bouton
-	
-	local numberFont = TTFont.new("fonts/K2D-Bold.ttf",48)
-	local count = TextField.new(numberFont, "3 x")
-		count:setAnchorPoint(0,0.5)
-		count:setTextColor(0xc70404)
-		count:setPosition(-360,42)	
-		bouton:addChild(count)
-		bouton.count = count	
-
-	bouton:addEventListener(Event.MOUSE_DOWN, function(event)
-        if bouton:hitTestPoint(event.x, event.y) then
-            event:stopPropagation()
-			bouton:getParent():removeChild(bouton)
-			self:harvestTime_phaseThree(player)
-        end
-    end)
-
-end
 
 function gameManager:harvestTime_phaseThree(player)
     -- Étape 3 : Naissance animaux
     player.board:centerOnX(800)
 	self.ui:queueInfo("Naissance chez vos animaux",player:getReproSummary(), 5, function()
-        self:endHarvestPhase(player)
+        self:handleHarvestBirth(player)
     end)
 end
+
+
+function gameManager:handleHarvestBirth(player)
+
+    local bouton = Bitmap.new(Texture.new("gfx/UI/validBtn.png"))
+		bouton:setAnchorPoint(1, 0.5)
+		bouton:setPosition(gRight - 80, gBottom / 2)
+		self.ui:addChild(bouton)
+		self.ui.bouton = bouton
+
+
+    -- fonction interne de mise à jour
+	function bouton:updateButtonState()
+
+	end
+
+    -- première mise à jour à la création
+    bouton:updateButtonState()
+
+    -- clic pour passer à la phase suivante
+    bouton:addEventListener(Event.MOUSE_DOWN, function(event)
+        if bouton:hitTestPoint(event.x, event.y) then
+            event:stopPropagation()
+			player:updateInventory()
+			
+            self.ui:removeChild(bouton)
+			self.ui.bouton = nil
+
+            self:endHarvestPhase(player)
+        end
+    end)
+end 
+
 
 function gameManager:endHarvestPhase(player)
 	player.board:setVisible(false)
@@ -1231,8 +1254,15 @@ function gameManager:saveGame()
     return saveData
 end
 
--- ======================================
--- ============ DEBUGGUEUR  =====
+-- ============================================================================
+-- ============================================================================
+-- ============================= DEBUGGUEUR  ==================================
+-- ============================================================================
+-- ============================================================================
+-- ================  PRINT BY PRESSING 'D' during game session ================
+-- ============================================================================
+-- ============================================================================
+
 function gameManager:debugState()
     print("\n===== DEBUG STATE ======")
 	print("Mémoire utilisée : " .. math.floor(collectgarbage("count")) .. " Ko")
@@ -1270,7 +1300,7 @@ function gameManager:debugState()
     -- Joueurs
     for idx, player in ipairs(self.playerList) do
         print(string.format("\nPlayer %d - %s  - %s", idx, player.name, player.color))
-        print("  Meeples placed:", #player.placedMeeples, " | Meeple total :" ..player.familySize)
+        print("  Meeples placed:", #player.placedMeeples, " | Meeple total :" ..player.familySize.." | "..player.malusCards.." carte mendicité")
         for _, m in ipairs(player.placedMeeples) do
             print("    •", m.myName, "available=", m.available)
         end
@@ -1364,7 +1394,7 @@ function gameManager:debugState()
         local player = self.playerList[self.currentPlayer]
         print("Player available meeples:", player.availableMeeples - #player.placedMeeples)
         print("Is GameIsPaused ?", self.gameIsPaused)
-		print("Is it bakingTime ?", gameManager.bakingTime)
+		print("Is it bakingTime ?", self.bakingTime)
     end
     print("========================\n")
 end

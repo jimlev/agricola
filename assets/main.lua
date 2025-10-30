@@ -36,7 +36,7 @@ function startGame()
 			p.timetable:debugPrint()
 		end
 		if e.keyCode == KeyCode.B then  -- touche D pour Debug
-			gameManager:letsConvertFood(gameManager:getActivePlayer())
+			gameManager:handleHarvestConversion(gameManager:getActivePlayer())
 		end
 
 	end)
