@@ -14,10 +14,12 @@ GridBox = Core.class(Sprite)
 function GridBox:init(col, row, player)
 	local backImg = Bitmap.new(Texture.new("gfx/playerboard/bgherbe_box.png"))
 	self:addChild(backImg)
+	self.backImg = backImg
 	
     self.col = col
     self.row = row
 	self.myPlayer = player
+	print(string.format("1. Je suis placé à %d / %d . Voici ma taille : %d et ma position en X : %d",self.col, self.row, self:getWidth(),self:getX()))
 	
 	self.state = "friche" -- gestion du visuel
 	
@@ -47,18 +49,19 @@ function GridBox:init(col, row, player)
         img:setVisible(false)
         self:addChild(img)
     end
+	print(string.format("2. Je suis placé à %d / %d . Voici ma taille : %d et ma position en X : %d",self.col, self.row, self:getWidth(),self:getX()))
 
     -- badge (comme pour les Sign)
-    local badge = Bitmap.new(Texture.new("gfx/signs/ic_badge.png"))
+    local badge = Bitmap.new(Texture.new("gfx/playerboard/harvestCount_box.png"))
 		badge:setAnchorPoint(0.5,0.5)
-		badge:setPosition(20, 170) -- ajuste selon ton sprite
+		badge:setPosition(232, 166) -- ajuste selon ton sprite
 		self:addChild(badge)
 		self.badge = badge
 
     local badgeCount = TextField.new(numberFont, "")
 		badgeCount:setAnchorPoint(0.5,1)
 		badgeCount:setTextColor(0xffffff)
-		badgeCount:setPosition(24, -12) -- centre du badge
+		badgeCount:setPosition(0, 28) -- centre du badge
 		badge:addChild(badgeCount)
 		self.badgeCount = badgeCount
 
@@ -74,7 +77,7 @@ end
 
 function GridBox:onClick(event)
 	if self:hitTestPoint(event.x, event.y) and self:getParent():isItPlayable() then
-		--print("GridBox:onClick: ",event.x, (self:getX()-(self:getWidth()/2)))
+		print("GridBox:onClick: ",self.col,self.row,event.x,self:getX() ,(self:getX()-(self:getWidth()/2)))
 		event:stopPropagation()
 		gameManager:handleBoxClick(self)
 	end 

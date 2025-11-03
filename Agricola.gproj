@@ -31,6 +31,8 @@
         <file name="assets/gfx/mire.png"/>
         <file name="assets/gfx/pancarte.png"/>
         <file name="assets/gfx/plateau.jpg"/>
+        <file name="assets/gfx/plateau1.jpg"/>
+        <file name="assets/gfx/plateau2.jpg"/>
         <file name="assets/gfx/plateau_01_fore.png"/>
         <file name="assets/gfx/plateau_02.png"/>
         <file name="assets/gfx/plateau_fore.png"/>
@@ -80,6 +82,7 @@
             <file name="assets/gfx/playerboard/clayhouse_box.png"/>
             <file name="assets/gfx/playerboard/etable_box.png"/>
             <file name="assets/gfx/playerboard/friche_box.png"/>
+            <file name="assets/gfx/playerboard/harvestCount_box.png"/>
             <file name="assets/gfx/playerboard/labourage_box.png"/>
             <file name="assets/gfx/playerboard/legume_box.png"/>
             <file name="assets/gfx/playerboard/paturage_box.png"/>
@@ -166,6 +169,7 @@
             </folder>
         </folder>
         <folder name="UI">
+            <file name="assets/gfx/UI/beggingBtn.png"/>
             <file name="assets/gfx/UI/blueInv_focus.png"/>
             <file name="assets/gfx/UI/blueP_Token.png"/>
             <file name="assets/gfx/UI/brownInv_focus.png"/>
@@ -182,7 +186,6 @@
             <file name="assets/gfx/UI/greenP_Token.png"/>
             <file name="assets/gfx/UI/hotspot_640132.png"/>
             <file name="assets/gfx/UI/hotspot_640132g.png"/>
-            <file name="assets/gfx/UI/mendicityBtn.png"/>
             <file name="assets/gfx/UI/pinkInv_focus.png"/>
             <file name="assets/gfx/UI/pinkP_Token.png"/>
             <file name="assets/gfx/UI/playerModule.png"/>

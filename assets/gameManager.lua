@@ -831,6 +831,7 @@ end
 function gameManager:onEnterHarvest()
 	print("🌾 Début de la phase de récolte")
 	self.harvestPlayerIndex = 1 -- on va commencer par le premier joueur
+	
     self:startHarvestPhase()
 end
 
@@ -843,10 +844,9 @@ end
 function gameManager:harvestTime_phaseOne(player)
      -- Étape 1 : Récolte champs
 	player.board:setVisible(true)
-	player.board:setAlpha(.7)
     player.board:centerOnX(200)
     
-    self.ui:queueInfo("Récolte des champs :", player:getHarvestSummary(), 3, function()
+    self.ui:queueInfo(player.name..": Récolte de vos champs :", player:getHarvestSummary(), 3, function()
         self:harvestTime_phaseTwo(player)
     end)
 end
@@ -867,7 +867,7 @@ function gameManager:handleHarvestConversion(player)
 		bouton:setPosition(gRight - 80, gBottom / 2)
 		self.ui:addChild(bouton)
 		self.ui.bouton = bouton
-		self.ui.bouton.mendicityCount = 0
+		self.ui.bouton.beggingCount = 0
 
     local numberFont = TTFont.new("fonts/K2D-Bold.ttf", 48)
     local count = TextField.new(numberFont, "")
@@ -883,9 +883,9 @@ function gameManager:handleHarvestConversion(player)
 		local foodAvailable = player.resources.food or 0
 
 		if foodAvailable < foodNeeded then
-			self:setTexture(Texture.new("gfx/UI/mendicityBtn.png"))
-			self.mendicityCount = foodNeeded - foodAvailable
-			self.count:setText(self.mendicityCount .. " x")
+			self:setTexture(Texture.new("gfx/UI/beggingBtn.png"))
+			self.beggingCount = foodNeeded - foodAvailable
+			self.count:setText(self.beggingCount .. " x")
 			self.count:setVisible(true)
 		else
 			self:setTexture(Texture.new("gfx/UI/validBtn.png"))
@@ -900,8 +900,8 @@ function gameManager:handleHarvestConversion(player)
     bouton:addEventListener(Event.MOUSE_DOWN, function(event)
         if bouton:hitTestPoint(event.x, event.y) then
             event:stopPropagation()
-			player.malusCards = player.malusCards + bouton.mendicityCount
-			player.resources.food = player.resources.food -  bouton.mendicityCount
+			player.malusCards = player.malusCards + bouton.beggingCount
+			player.resources.food = player.resources.food -  bouton.beggingCount
 			player:updateInventory()
 			
             self.ui:removeChild(bouton)
@@ -955,11 +955,22 @@ end
 
 
 function gameManager:endHarvestPhase(player)
-	player.board:setVisible(false)
-    print("🌾 Fin de la phase de récolte")
-    -- Retour au cycle normal
-    self:changeState(GAME_STATES.ROUND_INIT)
+    player.board:setVisible(false)
+
+    -- Passe au joueur suivant
+    self.harvestPlayerIndex = self.harvestPlayerIndex + 1
+
+    if self.harvestPlayerIndex <= #self.playerList then
+        local nextPlayer = self.playerList[self.harvestPlayerIndex]
+        print("➡️ Passage à la récolte du joueur suivant :", nextPlayer.name)
+        self:harvestTime_phaseOne(nextPlayer)
+    else
+        print("🌾 Fin de la phase de récolte pour tous les joueurs")
+        self.harvestPlayerIndex = nil  -- reset de sécurité
+        self:changeState(GAME_STATES.ROUND_INIT)
+    end
 end
+
 
 -- +++++++++++++++++++++++ HELPERS +++++++++++++++++++++++++++
 -- +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
