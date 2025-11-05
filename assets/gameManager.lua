@@ -274,6 +274,8 @@ function gameManager:startPlayerTurn()
 end
 
 function gameManager:updateUIForPlayer(player)
+	actionDB:updateActionCost(player)
+	
 	for _, sign in ipairs(self.signs) do
         sign:updateForPlayer(player)
     end
@@ -370,7 +372,9 @@ function gameManager:continueAction()
             if actionData2 and actionData2.cost then
                 local _, maxQuantity = snapshot:canAfford(actionData2.cost)
                 self.pendingAction2.actionCounter = maxQuantity
-            else
+            elseif actionData2.noCount then
+				self.pendingAction2.actionCounter = 999
+			else
                 self.pendingAction2.actionCounter = 1
             end
         end
@@ -515,10 +519,12 @@ function gameManager:initPendingCreation(signId, meeple)
 		self.pendingAction.step = 1
 		
 		local xtraData = actionDB:getActionById(sign.actionData.extraActionId )
-	
+	print("recuperation des données de l'eXTRA:", xtraData.cost, xtraData.noCount or 5)
 		if xtraData.cost then
 			local _, maxQuantity = player:canAfford(xtraData.cost)
 			self.pendingAction2.actionCounter = maxQuantity
+		elseif xtraData.noCount then
+			self.pendingAction2.actionCounter = 999
 		else
 			self.pendingAction2.actionCounter = 1
 		end
@@ -688,16 +694,16 @@ function gameManager:dispatchActionToHandler(actionData, snapshot)
 	elseif self.currentAction == "cloture" then
        	
 	elseif self.currentAction == "naissance" then
-       
+       	self:beginBirthAction(snapshot)
+		
 	elseif self.currentAction == "renovation" then
-       		
+        self:beginRenovation(snapshot)       		
 	elseif self.currentAction == "minor_improvement" then
       	
 	elseif self.currentAction == "any_improvement" then
 		self:beginBuyImprovement(snapshot)
 		
 	elseif self.currentAction == "cuisson" then
-		print("CUISSON ",#snapshot.originalPlayer.majorCard)
 		if #snapshot.originalPlayer.majorCard >= 1 then -- ne marche pas si le joueur a le puit ! TODO
 			self:beginBakingAction(snapshot)
 		end	
@@ -726,9 +732,34 @@ function gameManager:beginNewRoom(player)  -- "construire"
 	player.board.isPlayable = true
 end
 
+function gameManager:beginRenovation(player)  -- "renovation"
+    player.board:setVisible(true)
+
+	local mat = player.house.rscType
+	local cost = self.currentActionCost
+	local nextMat
+	
+	-- Déterminer le matériau supérieur
+	if mat == "wood" then
+		nextMat = "clay"
+	elseif mat == "clay" then
+		nextMat = "stone"
+	end
+print("le nouveau materiau sera "..nextMat)
+	player:setNewBoxState("m_"..nextMat)
+	player:payResources(cost)		
+	player.house.rscType = nextMat
+	self:displayContinueButton()
+end
+
 function gameManager:beginAddStable(player)   -- "etable"
     player.board:setVisible(true)
 	player.board.isPlayable = true
+end
+
+function gameManager:beginBirthAction(player)   -- "Naissance"
+	player.familySize = player.familySize + 1
+	self:displayValidButton()	
 end
 
 function gameManager:beginBakingAction(player)   -- "cuisson"
@@ -779,7 +810,7 @@ function gameManager:handleBoxClick(box)
 		valid = true
 		
 	elseif self.currentAction == "semaille" and box.myType == "field" then
-			
+			print("SEMAILLE ??: ",self.pendingAction.step,self.pendingAction2.actionCounter)
 		if box:canPlant() then	
 			box:plantSeed()
 			valid = true
@@ -789,11 +820,8 @@ function gameManager:handleBoxClick(box)
         local mat = "m_" .. snapshot.house.rscType
         box:setState(mat, nil)
 		
-		if cost then
-			snapshot:payResources(cost)
-			--snapshot:updateInventory()
-			--self.pendingAction.player:updateInventory()
-        end
+		snapshot:payResources(cost)
+		snapshot.house.rooms = snapshot.house.rooms + 1			
         
 		valid = true
 
@@ -1100,6 +1128,8 @@ function gameManager:showSettings()
 		player.board.isPlayable = false
 		self.gameIsPaused = true
 		self.showingSettings = true 
+		gameManager:debugState()
+		
 	elseif self.showingSettings == true then
 		print("HIDE SETTINGS SCREEN")
 		player.board.isPlayable = true
@@ -1289,18 +1319,33 @@ function gameManager:debugState()
     print("Current Player:", currentPlayerStr)
 
     -- Pending action
-    if self.pendingAction then
-        local sign = self:getSignById(self.pendingAction.signId)
-        local signTitle = sign and sign.actionData.title or "nil"
-        print(string.format("PendingAction: ID=%s | Sign='%s' | Meeple=%s | Player=%s | Counter=%s",
-            tostring(self.pendingAction.signId),
-            signTitle,
-            self.pendingAction.meeple and self.pendingAction.meeple.myName or "nil",
-            self.pendingAction.player.name or "nil", self.pendingAction.actionCounter or "nil"
-        ))
-    else
-        print("PendingAction: nil")
-    end
+	-- Pending actions avec indication de celle active
+	if self.pendingAction then
+		local currentStep = self.pendingAction.step or 1
+		
+		-- Pending action 1
+		local sign = self:getSignById(self.pendingAction.signId)
+		local signTitle = sign and sign.actionData.title or "nil"
+		local activeMarker1 = (currentStep == 1) and " ← ACTIVE" or ""
+		print(string.format("PendingAction 1: ID=%s | Sign='%s' | Meeple=%s | Player=%s | Counter=%s%s",
+			tostring(self.pendingAction.signId),
+			signTitle,
+			self.pendingAction.meeple and self.pendingAction.meeple.myName or "nil",
+			self.pendingAction.player.name or "nil",
+			self.pendingAction.actionCounter or "nil",
+			activeMarker1
+		))
+		
+		-- Pending action 2 (si existe)
+		if self.pendingAction2 then
+		local activeMarker2 = (currentStep == 2) and " ← ACTIVE" or ""
+		local secondTitle = sign.actionData.comment or "nil"
+		print(string.format("PendingAction 2: ID=%s | Sign='%s' | Counter=%s%s",
+			tostring(self.pendingAction2.actionId),secondTitle,self.pendingAction2.actionCounter,activeMarker2,activeMarker2))	
+		end
+	else
+		print("PendingAction: nil")
+	end
 
     -- Meeple en cours de déplacement
     print("MeepleInPlay:", self.meepleInPlay and self.meepleInPlay.myName or "nil")

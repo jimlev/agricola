@@ -97,7 +97,7 @@ local ACTIONS_DATA = {
         { id = 17, title = "Rénovation + Amélioration", icon = "gfx/signs/ic_renovation.png",
           special = "renovation",
           workers = 1, col = 6, row = 3,
-          cost = { material = 99, reed = 1 }, -- 99 = per_room (detrompeur)
+          cost = { material = 1, reed = 1 }, -- 99 = per_room (detrompeur)
           extraActionId = 11, -- propose aussi 'Amélioration' (id 11)
           comment = "Rénover la maison:\n1 matériau/pièce + 1 roseau\n+ amélioration" },
     },
@@ -130,7 +130,7 @@ local ACTIONS_DATA = {
 
     -- Round 5 (tours 12–13) - Colonne 8
     round5 = {
-        { id = 22, title = "Labourer et/ou semer", icon = "gfx/signs/ic_labourage.png",
+        { id = 22, title = "Labourer", icon = "gfx/signs/ic_labousemaille.png",
           special = "labourer",
           workers = 1, col = 8, row = 1,
           extraActionId = 12, -- semer réutilise la case 12
@@ -147,7 +147,7 @@ local ACTIONS_DATA = {
         { id = 24, title = "Rénovation + Clôtures", icon = "gfx/signs/ic_renovation.png",
           special = "renovation",
           workers = 1, col = 8, row = 3,
-          cost = { material = 99, reed = 1 }, -- 99 = per_room
+          cost = { material = 1, reed = 1 }, --  = per_room
           extraActionId = 14, -- proposer aussi 'Clôtures' (id 14)
           comment = "Rénover toute la maison (1 matériau par pièce + 1 roseau fixe) + clôtures" }
     },
@@ -253,6 +253,46 @@ function Actions:getActionByIndex(idx)
     end
     
     return nil -- Index trop grand
+end
+
+function Actions:updateActionCost(player)
+	for _,group in pairs(self.data) do	
+		for _, data in pairs(group) do       
+			-- === CONSTRUCTION ===
+			if data.special == "construire" then
+				local mat = player.house.rscType
+				data.cost = {
+					[mat] = 5,
+					reed = 2
+				}
+				
+			-- === RENOVATION ===
+			elseif data.special == "renovation" then
+				local mat = player.house.rscType
+				local nextMat
+				
+				-- Déterminer le matériau supérieur
+				if mat == "wood" then
+					nextMat = "clay"
+				elseif mat == "clay" then
+					nextMat = "stone"
+				else
+					-- Déjà maison en pierre → pas de rénovation possible. On fixe un coût "bloquant"
+					data.cost = {stone = 999}
+					nextMat = nil 
+				end
+				
+				-- Si un matériau supérieur existe, calculer le coût
+				if nextMat then
+					local rooms = player.house.rooms or 1
+					data.cost = {
+						[nextMat] = rooms,
+						reed = 1
+					}
+				end
+			end
+		end
+	end
 end
 
 -- Fonction utilitaire pour obtenir l'index global d'une action par son id

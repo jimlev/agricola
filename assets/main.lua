@@ -12,8 +12,9 @@ print("======================     NEW GAME     =============================")
 print("=====================================================================")
 print("=====================================================================")
 print("")
-print("🚨 À GERER :  l'enchainement des fin de periode ne marche pas en multijoueur ")
+print("🚨 À GERER :  BUG la mendicité egendre de la food négative ")
 print("🚨 À GERER :  l'inventaire n'est pas visible durant la fin de periode ")
+print("🚨 À GERER :  Ajouter les actions de Naissance")
 
 function startGame()
 	actionDB = Actions.new()
@@ -22,7 +23,7 @@ function startGame()
 		stage:addChild(UI)
 		stage.UI = UI
 		
-	gameManager:init(1)
+	gameManager:init(2)
 	
 	stage:addEventListener(Event.KEY_DOWN, function(e)
 		if e.keyCode == KeyCode.D then  -- touche D pour Debug

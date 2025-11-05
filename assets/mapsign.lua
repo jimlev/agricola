@@ -206,29 +206,31 @@ function sign:updateForPlayer(player)
     local data = self.actionData
     local canUse = true
 
-    -- si pas de cost, on laisse visible sinon...
+    -- Si la fonction actionDB:updateActionCost(player) a déjà été appelée avant,
+    -- data.cost contient désormais les bons matériaux et quantités.
     if data.cost then
-		
         for rsc, amount in pairs(data.cost) do
-            local actualResource = rsc
-            if rsc == "material" then
-                actualResource = player.house.rscType
-            end
-
-            local playerAmount = player.resources[actualResource] or 0
+            local playerAmount = player.resources[rsc] or 0
             if playerAmount < amount then
                 canUse = false
-                break  -- si une ressource manque, on stoppe la vérification
+                break
             end
         end
-		
     end
-	if data.special == "semaille" and player.fields == 0 then  
-		canUse = false
-	end	
-	self.active = canUse
-	self:updateVisuals()
+
+    -- Conditions spéciales liées au joueur
+    if data.special == "semaille" and player.fields == 0 then
+        canUse = false
+    end
+    if data.special == "naissance" and player.house.rooms == player.familySize then
+        canUse = false
+    end
+
+    -- Application du résultat
+    self.active = canUse
+    self:updateVisuals()
 end
+
 
 function sign:hiliteMe()
 	if self.active and not self.occupied then

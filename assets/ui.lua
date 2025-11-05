@@ -133,7 +133,7 @@ function UI:displayInfo(t1, t2)
     
     popup.touchListener = function(event)
         if self.isDisplayingInfo and popup:getParent() then
-            print("⚡ SKIP vers popup suivante")
+--            print("⚡ SKIP vers popup suivante")
             self:hideInfoPanel(popup)
             event:stopPropagation()
         end

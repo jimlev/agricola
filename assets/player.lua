@@ -33,8 +33,8 @@ function Player:init(id, name, color, humanOrNot)
 	self.converters = {}
 	self.pendingMajorCardIndex = nil
     -- Progression
-    self.familySize = 1 -- total quand la famille s'aggrandit
-    self.house = {rscType = "wood", rooms = 3}
+    self.familySize = 2 -- total quand la famille s'aggrandit
+    self.house = {rscType = "wood", rooms = 2}
     self.fields = 0
     self.pastures = 0
 	self.malusCards = 0
@@ -104,6 +104,12 @@ end
 
 function Player:payResources(costs)
     if not self:canAfford(costs) then return false end
+	
+		if not costs or type(costs) ~= "table" then
+        print("⚠️ ["..self.name.."] payResources appelé avec costs invalide:", costs)
+        return false
+    end
+
 
     for resource, cost in pairs(costs) do
         local actualResource = resource
@@ -309,6 +315,20 @@ end
 -- !#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!
 -- !#!#!#!#!#!#!#!#!#!#!#  HELPERS DES RECOLTES   !#!#!#!#!#!#!#!#!#!#!#
 -- !#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!
+
+-- Retourne une phrase récapitulative de la récolte
+function Player:setNewBoxState(mat)
+	print("on va renover en ",mat)
+    for row = 1, #self.board.boxes do
+        for col = 1, #self.board.boxes[row] do
+            local box = self.board.boxes[row][col]
+			if box.myType == "house" then
+				print("box id: ",box.row..box.col)
+				box:setState(mat, nil)
+			end
+        end
+    end
+end
 
 -- Retourne une phrase récapitulative de la récolte
 function Player:getHarvestSummary()

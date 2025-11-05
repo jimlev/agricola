@@ -29,6 +29,7 @@ function PlayerBoard:init(player)
 			
 			if (r == 2 and c == 1) or (r == 3 and c == 1) then
 				box:setState("m_wood")
+				box.myType = "house"
 				box.isLocked = true  -- propriété pour bloquer les clics
 			end
 		
@@ -202,7 +203,7 @@ function PlayerBoard:cycleBoxSeed(col, row, snapshot)
     -- Fallback (ne devrait jamais arriver)
     return nil, 0
 end
-
+--[[
 function PlayerBoard:getBox(col, row)
     if self.boxes[row] and self.boxes[row][col] then
         return self.boxes[row][col]
@@ -223,18 +224,20 @@ function PlayerBoard:updateBoxQty(col, row, qty)
         box:setState(box.state, {qty = qty})
     end
 end
+]]--
 
 -- applique plusieurs modifications en une fois
 function PlayerBoard:getTypeQty()
-	local fieldCount, pastureCount = 0,0
+	local fieldCount, pastureCount,houseCount = 0,0,0
     for r = 1, self.rows do
         for c = 1, self.cols do
 			local box = self.boxes[r][c]
 			if box:isField() then  fieldCount = fieldCount +1 end
 			if box:isPasture() then pastureCount = pastureCount +1 end
+			if box:isHouse() then houseCount = houseCount +1 end
 		end
     end
-	return fieldCount, pastureCount
+	return fieldCount, pastureCount, houseCount
 end
 
 

@@ -6,7 +6,7 @@
 -- Planter blé avec 3 grains
 -- box:setState("ble", {qty = 3})
 
--- isGrowing  (boleen) indique si un champ a une culture en cours
+-- isGrowing  (boleen) indique  si un champ a une culture en cours
 local numberFont = TTFont.new("fonts/K2D-Bold.ttf",28)
 
 GridBox = Core.class(Sprite)
@@ -19,7 +19,6 @@ function GridBox:init(col, row, player)
     self.col = col
     self.row = row
 	self.myPlayer = player
-	print(string.format("1. Je suis placé à %d / %d . Voici ma taille : %d et ma position en X : %d",self.col, self.row, self:getWidth(),self:getX()))
 	
 	self.state = "friche" -- gestion du visuel
 	
@@ -40,8 +39,8 @@ function GridBox:init(col, row, player)
         legume   = Bitmap.new(Texture.new("gfx/playerboard/legume_box.png")),
         etable 	 = Bitmap.new(Texture.new("gfx/playerboard/etable_box.png")),
         m_wood   = Bitmap.new(Texture.new("gfx/playerboard/woodhouse_box.png")),
-        m_clay    = Bitmap.new(Texture.new("gfx/playerboard/woodhouse_box.png")),
-        m_stone   = Bitmap.new(Texture.new("gfx/playerboard/woodhouse_box.png"))
+        m_clay    = Bitmap.new(Texture.new("gfx/playerboard/clayhouse_box.png")),
+        m_stone   = Bitmap.new(Texture.new("gfx/playerboard/stonehouse_box.png"))
     }
 
     -- ajouter tous les visuels mais invisibles
@@ -49,8 +48,7 @@ function GridBox:init(col, row, player)
         img:setVisible(false)
         self:addChild(img)
     end
-	print(string.format("2. Je suis placé à %d / %d . Voici ma taille : %d et ma position en X : %d",self.col, self.row, self:getWidth(),self:getX()))
-
+	
     -- badge (comme pour les Sign)
     local badge = Bitmap.new(Texture.new("gfx/playerboard/harvestCount_box.png"))
 		badge:setAnchorPoint(0.5,0.5)
@@ -58,10 +56,10 @@ function GridBox:init(col, row, player)
 		self:addChild(badge)
 		self.badge = badge
 
-    local badgeCount = TextField.new(numberFont, "")
+    local badgeCount = TextField.new(numberFont, "0")
 		badgeCount:setAnchorPoint(0.5,1)
 		badgeCount:setTextColor(0xffffff)
-		badgeCount:setPosition(0, 28) -- centre du badge
+		badgeCount:setPosition(0, 24) -- centre du badge
 		badge:addChild(badgeCount)
 		self.badgeCount = badgeCount
 
@@ -77,7 +75,6 @@ end
 
 function GridBox:onClick(event)
 	if self:hitTestPoint(event.x, event.y) and self:getParent():isItPlayable() then
-		print("GridBox:onClick: ",self.col,self.row,event.x,self:getX() ,(self:getX()-(self:getWidth()/2)))
 		event:stopPropagation()
 		gameManager:handleBoxClick(self)
 	end 
@@ -106,13 +103,15 @@ function GridBox:calculateState()
     elseif self.myType == "pasture" then
         -- Pour l'instant, juste étable ou friche
         return self.hasStable and "etable" or "friche"
-    else
+    elseif self.myType == "house" then
+		return self.state
+	else
         return self.state or "friche"  -- fallback
     end
 end
 
-function GridBox:setState(s, data)
-
+function GridBox:setState(s, data) -- update du visuel
+print("GridBox:setState "..s)
     -- cacher toutes les images
     for _, img in pairs(self.imgs) do
         img:setVisible(false)
@@ -255,6 +254,11 @@ end
 function GridBox:isField()
     return self.myType == "field", self.mySeed
 end
+
+function GridBox:isHouse()
+    return self.myType == "house"
+end
+
 
 function GridBox:isPasture()
     return self.myType == "pasture"
