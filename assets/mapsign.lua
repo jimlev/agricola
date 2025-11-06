@@ -222,7 +222,7 @@ function sign:updateForPlayer(player)
     if data.special == "semaille" and player.fields == 0 then
         canUse = false
     end
-    if data.special == "naissance" and player.house.rooms == player.familySize then
+    if data.special == "naissance" and player.house.rooms == player.familySize or player.familySize == 5 then
         canUse = false
     end
 

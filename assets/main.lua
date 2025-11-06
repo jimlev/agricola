@@ -12,9 +12,9 @@ print("======================     NEW GAME     =============================")
 print("=====================================================================")
 print("=====================================================================")
 print("")
-print("🚨 À GERER :  BUG la mendicité egendre de la food négative ")
+print("🚨 À GERER :  BUG la mendicité engendre de la food négative ")
 print("🚨 À GERER :  l'inventaire n'est pas visible durant la fin de periode ")
-print("🚨 À GERER :  Ajouter les actions de Naissance")
+print("🚨 À GERER :  Gérer la problematique de bouffe post Naissance")
 
 function startGame()
 	actionDB = Actions.new()
@@ -23,21 +23,22 @@ function startGame()
 		stage:addChild(UI)
 		stage.UI = UI
 		
-	gameManager:init(2)
+	gameManager:init(1)
 	
 	stage:addEventListener(Event.KEY_DOWN, function(e)
 		if e.keyCode == KeyCode.D then  -- touche D pour Debug
 			gameManager:debugState()
 		end
 	local p = gameManager:getActivePlayer()
-		if e.keyCode == KeyCode.R then  -- touche D pour Debug
+		if e.keyCode == KeyCode.R then  -- touche R pour Debug
 			p:counterState()
 		end
-		if e.keyCode == KeyCode.T then  -- touche D pour Debug
+		if e.keyCode == KeyCode.T then  -- touche T pour Debug
 			p.timetable:debugPrint()
 		end
-		if e.keyCode == KeyCode.B then  -- touche D pour Debug
-			gameManager:handleHarvestConversion(gameManager:getActivePlayer())
+		if e.keyCode == KeyCode.B then  -- touche B pour Debug
+			p:printFarmInfo()
+			--p:debugHouseState()
 		end
 
 	end)

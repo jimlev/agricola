@@ -131,6 +131,9 @@ function gameManager:exitState(state)
 
     elseif state == GAME_STATES.TURN_END then
 		print("_____________________________________________________ fin de tour")
+		
+	 elseif state == GAME_STATES.ROUND_END then
+		print("===================================================== fin de round")	
     end
 end
 
@@ -299,8 +302,10 @@ function gameManager:executeAction()
 	-- on confirme les changements d'états des Box du playerBoard
 	self.ui:killConfirmPopup()
 	snapshot.board.isPlayable = false -- sécu car snapshot va être kill
+	snapshot:checkFieldGrow() -- les champs qui ont été plantés deviennent in-cliquable
 	self.bakingTime = false
 	self.inBuyCardMode = false -- les cartes ne sont plus achetables
+
 	
 	-- je confirme l'achat de celle sélectionnée et je crée son widget
 	if self.currentZoomedCard ~= nil then 
@@ -325,7 +330,9 @@ function gameManager:executeAction()
 	-- ... puis on détruit le snapshot
 	self:killSnapshot(player)
 	
--- ======================= SNAPSHOT n'existe plus à partir d'ici ;)  ===	
+-- ==================================================================================================================	
+-- ==================================================================== SNAPSHOT n'existe plus à partir d'ici ;)  ===
+	
 	player.inventaire:setY(player.inventaire:getY()-500)
 	player.availableMeeples = player.availableMeeples - 1
     table.insert(player.placedMeeples, action.meeple)
@@ -608,6 +615,8 @@ end
 function gameManager:endRound()
     print("Round " .. self.currentRound .. " ended")
     
+	self:updateFamilySize()
+
 	local harvestRounds = {4, 7, 9, 11, 13, 14}	
     local isHarvestRound = false
 	
@@ -745,8 +754,8 @@ function gameManager:beginRenovation(player)  -- "renovation"
 	elseif mat == "clay" then
 		nextMat = "stone"
 	end
-print("le nouveau materiau sera "..nextMat)
-	player:setNewBoxState("m_"..nextMat)
+
+	player:setNewHouseState(nextMat)
 	player:payResources(cost)		
 	player.house.rscType = nextMat
 	self:displayContinueButton()
@@ -758,7 +767,7 @@ function gameManager:beginAddStable(player)   -- "etable"
 end
 
 function gameManager:beginBirthAction(player)   -- "Naissance"
-	player.familySize = player.familySize + 1
+	player.familyBirth = player.familyBirth + 1
 	self:displayValidButton()	
 end
 
@@ -769,7 +778,6 @@ function gameManager:beginBakingAction(player)   -- "cuisson"
 	player:updateConverterBtn()
 	self:displayValidButton()
 end
-
 
 function gameManager:beginBuyImprovement(player)   -- "Amelioration"
 	-- j'affiche le board du joueur pour preparer le placement du widget MI
@@ -805,35 +813,31 @@ function gameManager:handleBoxClick(box)
     local valid = false
 
     -- 2. Vérifier le type d’action
-    if self.currentAction == "labourer" and box.state == "friche" then
+    if self.currentAction == "labourer" and box.myType == "empty" then
 		box:convertToField()
 		valid = true
 		
 	elseif self.currentAction == "semaille" and box.myType == "field" then
-			print("SEMAILLE ??: ",self.pendingAction.step,self.pendingAction2.actionCounter)
 		if box:canPlant() then	
 			box:plantSeed()
 			valid = true
 		end
 		
-    elseif self.currentAction == "construire" and box.state == "friche" then
-        local mat = "m_" .. snapshot.house.rscType
-        box:setState(mat, nil)
-		
-		snapshot:payResources(cost)
-		snapshot.house.rooms = snapshot.house.rooms + 1			
-        
-		valid = true
+	elseif self.currentAction == "construire" and box.state == "friche" then
+		if box:convertToHouse(snapshot.house.rscType) then
+			snapshot:payResources(cost)
+			snapshot.house.rooms = snapshot.house.rooms + 1
+			valid = true
+		end		
 
     elseif self.currentAction == "etable" and box.state == "friche" then
-        box:setState("etable", nil)
-		
-		if cost then
-			snapshot:payResources(cost)
-			snapshot:updateInventory()
-        end
-		valid = true
-		
+		if box:buildStable() then
+			if cost then
+				snapshot:payResources(cost)
+				snapshot:updateInventory()
+			end
+			valid = true	
+		end
     end
 
     -- 3. Si clic valide, on décrémente et on affiche les bons boutons
@@ -849,7 +853,6 @@ function gameManager:handleBoxClick(box)
 			self:displayValidButton()
 			self.pendingAction.actionCounter = self.pendingAction.actionCounter - 1
 		end
- 
     end
 end
 
@@ -1018,6 +1021,17 @@ function gameManager:showDuoChoicePopup()
     self.actionPopup = self.ui:createChoicePopup(action1, fct1, action2, fct2)
 end
 
+function gameManager:updateFamilySize()
+	for i, player in ipairs(self.playerList) do
+		print("Check familyBirth", player.name, player.familyBirth)
+		if player.familyBirth ~= 0 then
+			print(player.name,"fête un heureux événement !")
+			player.familySize = player.familySize + player.familyBirth
+			player.familyBirth = 0
+		end
+    end
+end
+
 function gameManager:displayValidButton()
 	if not self.pendingAction.hasValidationButton then
 		self.ui:showConfirmPopup({"valid"})
@@ -1160,6 +1174,7 @@ function gameManager:createPlayerSnapshot(player)
 	--snapshot.converters = table.clone(originalPlayer.converters, nil, true)
 
     snapshot.familySize = originalPlayer.familySize
+
     snapshot.house = table.clone(originalPlayer.house, nil, true)
     snapshot.fields = originalPlayer.fields
     snapshot.pastures = originalPlayer.pastures
@@ -1175,15 +1190,16 @@ function gameManager:createPlayerSnapshot(player)
             local playerGridBox = originalPlayer.board.boxes[row][col]
             
 			snapshotGridBox.myType = playerGridBox.myType 
+			snapshotGridBox.state = playerGridBox.state 			
 			snapshotGridBox.mySeed = playerGridBox.mySeed  
-			snapshotGridBox.isGrowing = playerGridBox.isGrowing 
 			snapshotGridBox.mySeedAmount = playerGridBox.mySeedAmount
 			snapshotGridBox.mySpecies = playerGridBox.mySpecies
 			snapshotGridBox.animals = playerGridBox.animals
 			snapshotGridBox.pastureLimit = playerGridBox.pastureLimit
 			snapshotGridBox.hasStable = playerGridBox.hasStable
+			snapshotGridBox.inGrowingPhase = playerGridBox.inGrowingPhase 
 			
-			snapshotGridBox:setState(playerGridBox.state)
+			snapshotGridBox:updateVisual()
         end
     end
 
@@ -1232,7 +1248,9 @@ function gameManager:commitSnapshot(player, clone)
     
     -- Copier toutes les données du clone vers le joueur original
     originalPlayer.resources = table.clone(clone.resources, nil, true)
+	
     originalPlayer.familySize = clone.familySize
+    originalPlayer.familyBirth = clone.familyBirth	
     originalPlayer.house = table.clone(clone.house, nil, true)
     originalPlayer.fields = clone.fields
     originalPlayer.pastures = clone.pastures
@@ -1253,15 +1271,16 @@ function gameManager:commitSnapshot(player, clone)
             if originalGridBox and cloneGridBox then
 				
 				originalGridBox.myType = cloneGridBox.myType 
+				originalGridBox.state = cloneGridBox.state 
 				originalGridBox.mySeed = cloneGridBox.mySeed 
-				originalGridBox.isGrowing = (cloneGridBox.mySeed ~= nil) 
 				originalGridBox.mySeedAmount = cloneGridBox.mySeedAmount
 				originalGridBox.mySpecies = cloneGridBox.mySpecies
 				originalGridBox.animals = cloneGridBox.animals
 				originalGridBox.pastureLimit = cloneGridBox.pastureLimit
 				originalGridBox.hasStable = cloneGridBox.hasStable
+				originalGridBox.inGrowingPhase = cloneGridBox.inGrowingPhase 
 				
-				originalGridBox:setState(cloneGridBox.state)
+				originalGridBox:updateVisual("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ")
             end
         end
     end

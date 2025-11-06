@@ -28,9 +28,7 @@ function PlayerBoard:init(player)
             box:setPosition(startX + (c-1)*spacingX, startY + (r-1)*spacingY)
 			
 			if (r == 2 and c == 1) or (r == 3 and c == 1) then
-				box:setState("m_wood")
-				box.myType = "house"
-				box.isLocked = true  -- propriété pour bloquer les clics
+				box:convertToHouse("wood")
 			end
 		
             self:addChild(box)
@@ -138,8 +136,7 @@ end
 =============================  GESTION DES BOXES  ===============================
 =================================================================================
 ]]--
-
-function PlayerBoard:cycleBoxSeed(col, row, snapshot)
+function PlayerBoard:cycleBoxSeed(col, row)
     local box = self.boxes[row][col]
     local currentSeed = box.mySeed  -- nil, "grain", "vegetable"
     
@@ -147,9 +144,9 @@ function PlayerBoard:cycleBoxSeed(col, row, snapshot)
     local grainAvailable = self.player.resources.grain
     local vegetableAvailable = self.player.resources.vegetable
     
- --   print(" ")
- --   print("cycleBoxSeed - État actuel:", currentSeed)
- --   print("Ressources joueur - Grain:", grainAvailable, "Légumes:", vegetableAvailable)
+    print(" ")
+    print("cycleBoxSeed - État actuel:", currentSeed)
+    print("Ressources joueur - Grain:", grainAvailable, "Légumes:", vegetableAvailable)
     
     -- Logique de cycle : nil → grain → vegetable → nil
     if currentSeed == nil then
@@ -158,19 +155,19 @@ function PlayerBoard:cycleBoxSeed(col, row, snapshot)
             -- Plante du grain
             self.player.resources.grain = self.player.resources.grain - 1
             self.player:updateInventory()
-            print("→ Plante grain (coût: 1 grain)")
+		print("→ Plante grain (coût: 1 grain)")
             return "grain", 3
             
         elseif vegetableAvailable > 0 then
             -- Pas de grain, essaye légume
             self.player.resources.vegetable = self.player.resources.vegetable - 1
             self.player:updateInventory()
-            print("→ Plante légume (coût: 1 légume)")
+		print("→ Plante légume (coût: 1 légume)")
             return "vegetable", 2
             
         else
             -- Rien disponible, reste vide
-            print("→ Reste vide (pas de ressources)")
+		print("→ Reste vide (pas de ressources)")
             return nil, 0
         end
         
@@ -181,14 +178,14 @@ function PlayerBoard:cycleBoxSeed(col, row, snapshot)
             self.player.resources.grain = self.player.resources.grain + 1
             self.player.resources.vegetable = self.player.resources.vegetable - 1
             self.player:updateInventory()
-            print("→ Remplace grain par légume (rembourse 1 grain, coût 1 légume)")
+		print("→ Remplace grain par légume (rembourse 1 grain, coût 1 légume)")
             return "vegetable", 2
             
         else
             -- Pas de légume, retour à vide : rembourse le grain
             self.player.resources.grain = self.player.resources.grain + 1
             self.player:updateInventory()
-            print("→ Retire grain (rembourse 1 grain)")
+		print("→ Retire grain (rembourse 1 grain)")
             return nil, 0
         end
         
@@ -211,24 +208,11 @@ function PlayerBoard:getBox(col, row)
     return nil
 end
 
-function PlayerBoard:setBoxState(col, row, state, data)
-    local box = self:getBox(col, row)
-    if box then
-        box:setState(state, data)
-    end
-end
-
-function PlayerBoard:updateBoxQty(col, row, qty)
-    local box = self:getBox(col, row)
-    if box and (box.state == "ble" or box.state == "legume") then
-        box:setState(box.state, {qty = qty})
-    end
-end
 ]]--
 
 -- applique plusieurs modifications en une fois
 function PlayerBoard:getTypeQty()
-	local fieldCount, pastureCount,houseCount = 0,0,0
+	local fieldCount, pastureCount, houseCount = 0,0,0
     for r = 1, self.rows do
         for c = 1, self.cols do
 			local box = self.boxes[r][c]

@@ -18,16 +18,16 @@ function Player:init(id, name, color, humanOrNot)
 	self.hasPlayedThisRound = false
     -- Ressources
     self.resources = {
-        wood = 0,
+        wood = 12,
         clay = 0,
         stone = 0,
-		reed = 0,
-        grain = 0,
+		reed = 12,
+        grain = 4,
         vegetable = 3,
         sheep = 0,
         pig = 0,
         cattle = 0,
-        food = 0  -- Démarrage avec 2 nourritures		
+        food = 110  -- Démarrage avec 2 nourritures		
     }
 	self.majorCard = {0}
 	self.converters = {}
@@ -41,6 +41,7 @@ function Player:init(id, name, color, humanOrNot)
     
     -- Meeples disponibles
     self.availableMeeples = self.familySize  -- Démarre avec 2, peut aller jusqu'à 5
+	self.familyBirth = 0
     self.placedMeeples = {}    -- Meeples déjà joués ce round
 	
 	self:initInventory()
@@ -317,18 +318,34 @@ end
 -- !#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!
 
 -- Retourne une phrase récapitulative de la récolte
-function Player:setNewBoxState(mat)
-	print("on va renover en ",mat)
+function Player:setNewHouseState(mat)
     for row = 1, #self.board.boxes do
         for col = 1, #self.board.boxes[row] do
             local box = self.board.boxes[row][col]
-			if box.myType == "house" then
-				print("box id: ",box.row..box.col)
-				box:setState(mat, nil)
-			end
+			box:renovateHouse(mat)
         end
     end
 end
+
+function Player:debugHouseState()
+    for row = 1, #self.board.boxes do
+        for col = 1, #self.board.boxes[row] do
+            local box = self.board.boxes[row][col]
+			box:updateVisual(">>> ")
+        end
+    end
+end
+
+-- Bloque les champs plantés pour éviter les re-plantage
+function Player:checkFieldGrow()
+   for row = 1, #self.board.boxes do
+        for col = 1, #self.board.boxes[row] do
+            local box = self.board.boxes[row][col]
+			box:setGrowingStatus()
+        end
+    end
+end
+
 
 -- Retourne une phrase récapitulative de la récolte
 function Player:getHarvestSummary()
@@ -390,4 +407,100 @@ function Player:getReproSummary() -- TODO : placement à implémenter plus tard
 	else
 		return "Pas de naissance chez vos animaux !"
 	end
+end
+
+
+
+-- ============================== DEBUG +++++++++++++++++++++++
+function Player:printFarmInfo()
+    print("=== État de la ferme de " .. tostring(self.name or "Joueur inconnu") .. " ===")
+    if not self.board or not self.board.boxes then
+        print("⚠️  Pas de plateau associé à ce joueur.")
+        return
+    end
+
+    local typeIcons = {
+        house = "🏠",
+        field = "🌾", 
+        empty = "⿻️",
+        pasture = "🐑"
+    }
+
+    for row = 1, #self.board.boxes do
+        for col = 1, #self.board.boxes[row] do
+            local box = self.board.boxes[row][col]
+            if box and box.myType and box.myType ~= "empty" then
+                local icon = typeIcons[box.myType] or "?"
+                
+                -- Construction des informations supplémentaires
+                local additionalInfo = {}
+                
+                if box.mySeed then
+                    table.insert(additionalInfo, "graine: " .. tostring(box.mySeed))
+                end
+                
+                if box.mySeedAmount and box.mySeedAmount > 0 then
+                    table.insert(additionalInfo, "quantité: " .. tostring(box.mySeedAmount))
+                end
+                
+                if box.inGrowingPhase then
+                    table.insert(additionalInfo, "en croissance")
+                end
+                
+                if box.hasStable then
+                    table.insert(additionalInfo, "🎠 étable")
+                end
+                
+                if box.state and box.state ~= "normal" then
+                    table.insert(additionalInfo, "état: " .. tostring(box.state))
+                end
+                
+                -- Formatage de la ligne
+                local info = string.format(
+                    "%s Case [%d,%d] | type: %s",
+                    icon,
+                    col,
+                    row,
+                    tostring(box.myType)
+                )
+                
+                -- Ajout des informations supplémentaires si elles existent
+                if #additionalInfo > 0 then
+                    info = info .. " | " .. table.concat(additionalInfo, " | ")
+                end
+                
+                print(info)
+            end
+        end
+    end
+    print("=== Fin de l'état de la ferme ===")
+end
+			
+function Player:Old_printFarmInfo()
+    print("=== État de la ferme de " .. tostring(self.name or "Joueur inconnu") .. " ===")
+    if not self.board or not self.board.boxes then
+        print("⚠️  Pas de plateau associé à ce joueur.")
+        return
+    end
+
+    for row = 1, #self.board.boxes do
+        for col = 1, #self.board.boxes[row] do
+            local box = self.board.boxes[row][col]
+            if box then
+                local info = string.format(
+                    "Case [%d,%d] | type: %s | state: %s | seed: %s | seedAmount: %s | growing ? %s",
+                    col,
+                    row,
+                    tostring(box.myType or "nil"),
+                    tostring(box.myState or "nil"),
+                    tostring(box.mySeed),
+                    tostring(box.mySeedAmount),
+					tostring(box.inGrowingPhase)
+                )
+                print(info)
+            else
+                print(string.format("Case [%d,%d] est vide (nil)", col, row))
+            end
+        end
+    end
 end
