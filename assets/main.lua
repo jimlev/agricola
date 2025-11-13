@@ -13,7 +13,7 @@ print("=====================================================================")
 print("=====================================================================")
 print("")
 print("🚨 À GERER :  BUG la mendicité engendre de la food négative ")
-print("🚨 À GERER :  l'inventaire n'est pas visible durant la fin de periode ")
+print("🚨 EN COURS : Afficher un bouton contextuel pour la bouffe lors de la recolte")
 print("🚨 À GERER :  Gérer la problematique de bouffe post Naissance")
 
 function startGame()
@@ -23,7 +23,7 @@ function startGame()
 		stage:addChild(UI)
 		stage.UI = UI
 		
-	gameManager:init(1)
+	gameManager:init(2)
 	
 	stage:addEventListener(Event.KEY_DOWN, function(e)
 		if e.keyCode == KeyCode.D then  -- touche D pour Debug

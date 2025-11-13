@@ -153,15 +153,13 @@ function PlayerBoard:cycleBoxSeed(col, row)
         -- Vide → essaye grain en premier
         if grainAvailable > 0 then
             -- Plante du grain
-            self.player.resources.grain = self.player.resources.grain - 1
-            self.player:updateInventory()
+			self.player:payResources({grain = 1})
 		print("→ Plante grain (coût: 1 grain)")
             return "grain", 3
             
         elseif vegetableAvailable > 0 then
             -- Pas de grain, essaye légume
-            self.player.resources.vegetable = self.player.resources.vegetable - 1
-            self.player:updateInventory()
+			self.player:payResources({vegetable = 1})
 		print("→ Plante légume (coût: 1 légume)")
             return "vegetable", 2
             
@@ -176,8 +174,7 @@ function PlayerBoard:cycleBoxSeed(col, row)
         if vegetableAvailable > 0 then
             -- Remplace grain par légume : rembourse le grain, débite le légume
             self.player.resources.grain = self.player.resources.grain + 1
-            self.player.resources.vegetable = self.player.resources.vegetable - 1
-            self.player:updateInventory()
+			self.player:payResources({vegetable = 1})
 		print("→ Remplace grain par légume (rembourse 1 grain, coût 1 légume)")
             return "vegetable", 2
             

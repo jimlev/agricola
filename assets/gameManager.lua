@@ -869,10 +869,14 @@ end
 -- PHASE DE RÉCOLTE
 function gameManager:startHarvestPhase()
 	local player = self.playerList[self.harvestPlayerIndex]
+
     self:harvestTime_phaseOne(player)
 end	
 	
 function gameManager:harvestTime_phaseOne(player)
+	
+	player.inventaire:setVisible(true)
+	player:updateConverterBtn()
      -- Étape 1 : Récolte champs
 	player.board:setVisible(true)
     player.board:centerOnX(200)
@@ -899,12 +903,13 @@ function gameManager:handleHarvestConversion(player)
 		self.ui:addChild(bouton)
 		self.ui.bouton = bouton
 		self.ui.bouton.beggingCount = 0
+		self.ui.bouton.eatingCount = 0
 
     local numberFont = TTFont.new("fonts/K2D-Bold.ttf", 48)
     local count = TextField.new(numberFont, "")
     count:setAnchorPoint(0, 0.5)
     count:setTextColor(0xc70404)
-    count:setPosition(-360, 42)
+    count:setPosition(-360, 20)
     bouton:addChild(count)
     bouton.count = count
 
@@ -919,8 +924,11 @@ function gameManager:handleHarvestConversion(player)
 			self.count:setText(self.beggingCount .. " x")
 			self.count:setVisible(true)
 		else
-			self:setTexture(Texture.new("gfx/UI/validBtn.png"))
-			self.count:setVisible(false)
+			self:setTexture(Texture.new("gfx/UI/eatfoodBtn.png"))
+			self.eatingCount = foodNeeded
+			self.count:setText("- "..self.eatingCount.." x")
+			self.count:setTextColor(0x30be6b)
+			self.count:setVisible(true)
 		end
 	end
 
@@ -931,8 +939,13 @@ function gameManager:handleHarvestConversion(player)
     bouton:addEventListener(Event.MOUSE_DOWN, function(event)
         if bouton:hitTestPoint(event.x, event.y) then
             event:stopPropagation()
-			player.malusCards = player.malusCards + bouton.beggingCount
-			player.resources.food = player.resources.food -  bouton.beggingCount
+			if bouton.beggingCount ~= 0 then --il y a mendicité
+				player.malusCards = player.malusCards + bouton.beggingCount
+				player:payResources({food = player.resources.food})
+			else
+				player:payResources({food = bouton.eatingCount})
+			end
+
 			player:updateInventory()
 			
             self.ui:removeChild(bouton)
@@ -961,15 +974,15 @@ function gameManager:handleHarvestBirth(player)
 		self.ui:addChild(bouton)
 		self.ui.bouton = bouton
 
-
     -- fonction interne de mise à jour
 	function bouton:updateButtonState()
-
+		-- rien en attendant le dev de la partie enclos
 	end
 
     -- première mise à jour à la création
     bouton:updateButtonState()
-
+	player:updateInventory()
+	
     -- clic pour passer à la phase suivante
     bouton:addEventListener(Event.MOUSE_DOWN, function(event)
         if bouton:hitTestPoint(event.x, event.y) then
@@ -978,7 +991,7 @@ function gameManager:handleHarvestBirth(player)
 			
             self.ui:removeChild(bouton)
 			self.ui.bouton = nil
-
+			player.board:setVisible(false)
             self:endHarvestPhase(player)
         end
     end)
@@ -986,6 +999,7 @@ end
 
 
 function gameManager:endHarvestPhase(player)
+	player.inventaire:setVisible(false)
     player.board:setVisible(false)
 
     -- Passe au joueur suivant

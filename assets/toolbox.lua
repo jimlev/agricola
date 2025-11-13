@@ -225,7 +225,7 @@ function createViewPlayerBoardBtn()
 			end
 		end
 	end
-		btnViewPBoard:addEventListener(Event.MOUSE_DOWN, onClick, btnViewPBoard)
+	btnViewPBoard:addEventListener(Event.MOUSE_DOWN, onClick, btnViewPBoard)
 end
 
 -- Gestion du bouton d'acces au player.board

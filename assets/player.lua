@@ -18,22 +18,22 @@ function Player:init(id, name, color, humanOrNot)
 	self.hasPlayedThisRound = false
     -- Ressources
     self.resources = {
-        wood = 12,
+        wood = 0,
         clay = 0,
         stone = 0,
-		reed = 12,
-        grain = 4,
-        vegetable = 3,
+		reed = 0,
+        grain = 0,
+        vegetable = 0,
         sheep = 0,
         pig = 0,
         cattle = 0,
-        food = 110  -- Démarrage avec 2 nourritures		
+        food = 0  -- Démarrage avec 2 nourritures		
     }
 	self.majorCard = {0}
 	self.converters = {}
 	self.pendingMajorCardIndex = nil
     -- Progression
-    self.familySize = 2 -- total quand la famille s'aggrandit
+    self.familySize = 1 -- total quand la famille s'aggrandit
     self.house = {rscType = "wood", rooms = 2}
     self.fields = 0
     self.pastures = 0
@@ -54,8 +54,7 @@ function Player:addResource(resource, amount)
 	
     local counter = self.inventoryCounters[resource]
 
-    if counter and counter.hilite then
-		
+    if counter and counter.hilite then	
 		counter.hilite:gotoAndPlay(2) -- lance l’anim du highlight
     end
 	self:updateInventory()
@@ -105,12 +104,10 @@ end
 
 function Player:payResources(costs)
     if not self:canAfford(costs) then return false end
-	
-		if not costs or type(costs) ~= "table" then
+	if not costs or type(costs) ~= "table" then
         print("⚠️ ["..self.name.."] payResources appelé avec costs invalide:", costs)
         return false
     end
-
 
     for resource, cost in pairs(costs) do
         local actualResource = resource
@@ -289,6 +286,7 @@ end
 -- ########################## HELPERS CONVERTER
 
 function Player:updateConverterBtn()
+print("Appel a updateConverterBtn", math.random(99999))
 	for i = 1, #self.converters do
 		self.converters[i]:updateButtons()
 	end
@@ -381,34 +379,30 @@ function Player:getFoodSummary()
 
 end
 
-function Player:getReproSummary() -- TODO : placement à implémenter plus tard
-	local newSheep, newPig, newCattle = 0, 0, 0
+function Player:getReproSummary()
+    local summaryParts = {}
 
-	if self.resources.sheep >= 2 then 
-		self.resources.sheep = self.resources.sheep + 1
-		newSheep = 1
-	end
-	if self.resources.pig >= 2 then 
-		self.resources.pig = self.resources.pig + 1
-		newPig = 1
-	end
-	if self.resources.cattle >= 2 then 
-		self.resources.cattle = self.resources.cattle + 1
-		newCattle = 1
-	end
+    if self.resources.sheep >= 2 then
+        self:addResource("sheep", 1)
+        table.insert(summaryParts, "1 mouton")
+    end
 
-	if newSheep + newPig + newCattle > 0 then
-		local summaryParts = {}
-		if newSheep > 0 then table.insert(summaryParts, newSheep .. " mouton" .. (newSheep > 1 and "s" or "")) end
-		if newPig > 0 then table.insert(summaryParts, newPig .. " cochon" .. (newPig > 1 and "s" or "")) end
-		if newCattle > 0 then table.insert(summaryParts, newCattle .. " bœuf" .. (newCattle > 1 and "s" or "")) end
-		
-		return "Naissance : " .. table.concat(summaryParts, ", ")
-	else
-		return "Pas de naissance chez vos animaux !"
-	end
+    if self.resources.pig >= 2 then
+        self:addResource("pig", 1)
+        table.insert(summaryParts, "1 cochon")
+    end
+
+    if self.resources.cattle >= 2 then
+        self:addResource("cattle", 1)
+        table.insert(summaryParts, "1 bœuf")
+    end
+
+    if #summaryParts > 0 then
+        return "Naissance : " .. table.concat(summaryParts, ", ")
+    else
+        return "Pas de naissance chez vos animaux !"
+    end
 end
-
 
 
 -- ============================== DEBUG +++++++++++++++++++++++

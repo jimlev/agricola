@@ -34,7 +34,6 @@
         <file name="assets/gfx/plateau1.jpg"/>
         <file name="assets/gfx/plateau2.jpg"/>
         <file name="assets/gfx/plateau_01_fore.png"/>
-        <file name="assets/gfx/plateau_02.png"/>
         <file name="assets/gfx/plateau_fore.png"/>
         <file name="assets/gfx/playerBoardBG.jpg"/>
         <file name="assets/gfx/positron.png"/>
@@ -181,6 +180,7 @@
             <file name="assets/gfx/UI/btn_playerboard_on.png"/>
             <file name="assets/gfx/UI/cancelBtn.png"/>
             <file name="assets/gfx/UI/continueBtn.png"/>
+            <file name="assets/gfx/UI/eatfoodBtn.png"/>
             <file name="assets/gfx/UI/focusP_Token.png"/>
             <file name="assets/gfx/UI/greenInv_focus.png"/>
             <file name="assets/gfx/UI/greenP_Token.png"/>

@@ -148,7 +148,7 @@ function UI:displayInfo(t1, t2)
     local title = TextField.new(titlefont, t1)
     title:setAnchorPoint(0.5,0.5)
     title:setTextColor(0xffffff)
-    title:setPosition(0,-130)
+    title:setPosition(0,-180)
     infoPanel:addChild(title)
     
     local msg = TextField.new(regularFont, t2)

@@ -63,10 +63,11 @@ function RscConverter:setButtonEnabled(kind, enabled)
 end
 
 
--- Met à jour les boutons en fonction du joueur et du contexte (contexte = "bake" pour la cuisson)
+-- Met à jour les boutons en fonction du joueur et du contexte 
 function RscConverter:updateButtons(context)
 
     local p = self.player or gameManager:getActivePlayer()
+	local p = self.player
     if not p then return end
 
     -- boutons "toujours" visibles mais activés seulement si ressources dispo
@@ -81,13 +82,13 @@ function RscConverter:updateButtons(context)
 
 
 	if self.mi.id == 0 then
-
         self:setButtonEnabled("grain", p:canAfford({grain = 1}))
+		print("on sort ici, inutile d'aller plus loin")
         return -- on sort ici, inutile d'aller plus loin
     end
 	
 	if not gameManager.bakingTime then
-        print(self.mi.id, "désactivé : pas en mode cuisson")
+        print(self.mi.id, "désactivé : Le jeu n'est pas en mode cuisson")
         self:setButtonEnabled("grain", false)
         return
     end
@@ -115,6 +116,10 @@ end
 -- Appelé lorsqu'on clique sur un bouton de conversion
 function RscConverter:onPressConversion(rscKind)
     local p, isSnapshot = gameManager:getActivePlayer()
+
+	if gameManager.currentState == "HARVEST" then -- on est en phase Récolte
+		local p = gameManager.playerList[gameManager.harvestPlayerIndex]	
+	end
 
     -- montrer ok / cancel
     self.okButton:setVisible(true)
@@ -180,13 +185,20 @@ end
 -- Valider transaction : ajoute la nourriture en une fois, vide pending, hide buttons
 function RscConverter:commit()
     local p = self.player or gameManager:getActivePlayer()
+	
+	if gameManager.currentState == "HARVEST" then -- on est en phase Récolte
+		local p = gameManager.playerList[gameManager.harvestPlayerIndex]	
+	end
+	
     if not p then return end
 
     if self.pendingFood and self.pendingFood > 0 then
         p:addResource("food", self.pendingFood)
         p:updateInventory()
     end
+	
 
+	
     self:resetPending()
     self.okButton:setVisible(false)
     self.cancelButton:setVisible(false)
