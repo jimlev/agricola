@@ -19,11 +19,11 @@ function Player:init(id, name, color, humanOrNot)
     -- Ressources
     self.resources = {
         wood = 0,
-        clay = 0,
+        clay = 3,
         stone = 0,
 		reed = 0,
         grain = 0,
-        vegetable = 0,
+        vegetable = 1,
         sheep = 0,
         pig = 0,
         cattle = 0,

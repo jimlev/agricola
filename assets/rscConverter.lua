@@ -8,6 +8,7 @@ function RscConverter:init(player, source, options)
     self.view = Sprite.new() 
 	
 	self.name = self.mi.name
+	self.player = player
 
 	local slotId = "slot"..player.board.slotList[1]
 	table.remove(player.board.slotList,1)
@@ -66,7 +67,7 @@ end
 -- Met à jour les boutons en fonction du joueur et du contexte 
 function RscConverter:updateButtons(context)
 
-    local p = self.player or gameManager:getActivePlayer()
+   -- local p = self.player or gameManager:getActivePlayer()
 	local p = self.player
     if not p then return end
 
@@ -115,12 +116,12 @@ end
 
 -- Appelé lorsqu'on clique sur un bouton de conversion
 function RscConverter:onPressConversion(rscKind)
-    local p, isSnapshot = gameManager:getActivePlayer()
-
-	if gameManager.currentState == "HARVEST" then -- on est en phase Récolte
-		local p = gameManager.playerList[gameManager.harvestPlayerIndex]	
-	end
-
+--    local p, isSnapshot = gameManager:getActivePlayer()
+--
+--	if gameManager.currentState == "HARVEST" then -- on est en phase Récolte
+--		local p = gameManager.playerList[gameManager.harvestPlayerIndex]	
+--	end
+	local p = self.player
     -- montrer ok / cancel
     self.okButton:setVisible(true)
     self.cancelButton:setVisible(true)
@@ -184,20 +185,19 @@ end
 
 -- Valider transaction : ajoute la nourriture en une fois, vide pending, hide buttons
 function RscConverter:commit()
-    local p = self.player or gameManager:getActivePlayer()
+--    local p = self.player or gameManager:getActivePlayer()
+--	
+--	if gameManager.currentState == "HARVEST" then -- on est en phase Récolte
+--		local p = gameManager.playerList[gameManager.harvestPlayerIndex]	
+--	end
 	
-	if gameManager.currentState == "HARVEST" then -- on est en phase Récolte
-		local p = gameManager.playerList[gameManager.harvestPlayerIndex]	
-	end
-	
+	local p = self.player
     if not p then return end
 
     if self.pendingFood and self.pendingFood > 0 then
         p:addResource("food", self.pendingFood)
         p:updateInventory()
     end
-	
-
 	
     self:resetPending()
     self.okButton:setVisible(false)
@@ -211,7 +211,8 @@ end
 
 -- CANCEL | Annuler : restitue les ressources remboursables
 function RscConverter:cancel(context)
-    local p = self.player or gameManager:getActivePlayer()
+  --  local p = self.player or gameManager:getActivePlayer()
+	local p = self.player
     if not p then return end
 
     for k, v in pairs(self.refund) do

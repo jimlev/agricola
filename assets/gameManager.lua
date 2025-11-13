@@ -869,12 +869,12 @@ end
 -- PHASE DE RÉCOLTE
 function gameManager:startHarvestPhase()
 	local player = self.playerList[self.harvestPlayerIndex]
-
     self:harvestTime_phaseOne(player)
 end	
 	
 function gameManager:harvestTime_phaseOne(player)
-	
+	player.tokenFocus:setVisible(true)
+		
 	player.inventaire:setVisible(true)
 	player:updateConverterBtn()
      -- Étape 1 : Récolte champs
@@ -934,6 +934,7 @@ function gameManager:handleHarvestConversion(player)
 
     -- première mise à jour à la création
     bouton:updateButtonState()
+	player:updateConverterBtn()
 
     -- clic pour passer à la phase suivante
     bouton:addEventListener(Event.MOUSE_DOWN, function(event)
@@ -1001,7 +1002,7 @@ end
 function gameManager:endHarvestPhase(player)
 	player.inventaire:setVisible(false)
     player.board:setVisible(false)
-
+	player.tokenFocus:setVisible(false)
     -- Passe au joueur suivant
     self.harvestPlayerIndex = self.harvestPlayerIndex + 1
 

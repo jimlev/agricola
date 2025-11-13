@@ -125,6 +125,7 @@ function MajorImprovement:init(id)
 		self.focus:setAnchorPoint(0.5, 0.5)
 	
 	self:addChild(self.cardImg)
+	self:addChild(self.focus)
 		
 	self.taken = false
 	self.isZoomed = false
@@ -143,8 +144,9 @@ function MajorImprovement:zoomCard()
         self.isZoomed = true
         gameManager.currentZoomedCard = self
     end
+	
 	if gameManager.inBuyCardMode then
-		if self:canAfford(player) then	--on stocke la carte convoitée pour l'achat
+		if self:canAfford(player) then	--on va stocker la carte convoitée pour l'achat
 			-- Si aucune carte en attente, on ajoute une nouvelle entrée
 			if not player.pendingMajorCardIndex then
 				table.insert(player.majorCard, self.id)
@@ -153,8 +155,8 @@ function MajorImprovement:zoomCard()
 				-- Sinon, on remplace la carte en attente
 				player.majorCard[player.pendingMajorCardIndex] = self.id
 			end
+			gameManager:handleCardBuy(self)
 			
-				gameManager:handleCardBuy(self)
 		else 
 			if gameManager.ui.popupLayer.continueBtn then
 			-- Cette carte est trop chère !
@@ -187,7 +189,7 @@ function MajorImprovement:backInMarket()
 	if gameManager.currentZoomedCard and gameManager.currentZoomedCard == self then
 
 		local originX = self.myCoords[1]										 
-        local originY = self.myCoords[2]
+        local originY = self.myCoords[2]  
 
         local mc = MovieClip.new{
             {1, 15, self, {
@@ -199,12 +201,13 @@ function MajorImprovement:backInMarket()
         gameManager.marketLayer.majorShelf:addChild(mc)
 		gameManager.marketLayer.majorShelf.mc = mc
 		self.isZoomed = false
+		
 	end
 end
 
 function MajorImprovement:greyOut()
     if self.cardImg then
-        self.cardImg:setColorTransform(0.8, 0.8, 0.8, 1) -- tons gris
+       self.cardImg:setColorTransform(0.8, 0.8, 0.8, 1) -- tons gris
     end
 	self.focus:setVisible(false)
     self.isGreyed = true
@@ -227,7 +230,6 @@ function MajorImprovement:updateMarketView()
 
     if self:canAfford(player) then
         self:restore()
-		self:addChild(self.focus)
 		self.focus:setVisible(true)
     else
         self:greyOut()
@@ -275,7 +277,7 @@ function MajorImprovement:onBeginSwipe(event)
 end
 
 function MajorImprovement:onTouchesEnd(event)
-	 if not gameManager.marketLayer:isVisible() then return end
+	if not gameManager.marketLayer:isVisible() then return end
     if not self.isZoomed or not self.swipeStartX then 
         self.swipeStartX = nil
         self.swipeStartY = nil
@@ -338,7 +340,6 @@ function MajorImprovement:clicToCard(card)
     if gameManager.currentZoomedCard ~= nil then
 	   gameManager.currentZoomedCard:backInMarket()
 	end
-	
 
     local endX = W / 2
     local endY = H / 2 - 120
@@ -355,6 +356,7 @@ function MajorImprovement:clicToCard(card)
     mc:addEventListener(Event.COMPLETE, function()
         card:zoomCard()
     end)
+
 end
 
 -- ===========================================================================
