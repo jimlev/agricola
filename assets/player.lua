@@ -18,7 +18,7 @@ function Player:init(id, name, color, humanOrNot)
 	self.hasPlayedThisRound = false
     -- Ressources
     self.resources = {
-        wood = 0,
+        wood = 7,
         clay = 3,
         stone = 0,
 		reed = 0,
@@ -57,6 +57,7 @@ function Player:addResource(resource, amount)
     if counter and counter.hilite then	
 		counter.hilite:gotoAndPlay(2) -- lance l’anim du highlight
     end
+	
 	self:updateInventory()
 end
 
@@ -102,8 +103,11 @@ function Player:canAfford(costs)
 end
 
 
-function Player:payResources(costs)
-    if not self:canAfford(costs) then return false end
+function Player:payResources(costs, allowNegative)
+    if not allowNegative and not self:canAfford(costs) then 
+        return false 
+    end
+	
 	if not costs or type(costs) ~= "table" then
         print("⚠️ ["..self.name.."] payResources appelé avec costs invalide:", costs)
         return false
@@ -127,6 +131,13 @@ function Player:payResources(costs)
         self.resources[actualResource] = self.resources[actualResource] - cost
 		local counter = self.inventoryCounters[actualResource]
 		counter.hilite:gotoAndPlay(2)
+		
+--		if self.resources[resource] < 0 then
+--            self.inventoryCounters[resource]:setTextColor(0xff0000)
+--        else
+--            self.inventoryCounters[resource]:setTextColor(0xffffff)
+--        end
+		
         print("💰 ["..self.name.."] paie "..cost.." "..actualResource.." (reste "..self.resources[actualResource]..")")
     end
 	self:updateInventory()
@@ -224,7 +235,6 @@ function Player:initInventory()
 		inventaire:addChild(counter)
 		
 		self.inventoryCounters[resourceName] = counter
-	--	if resourceName == 'food' then counter:setVisible(false) end -- le Grand compteur fait l'affichage
 		
 	local rscHilite = Bitmap.new(Texture.new("gfx/focus_inventaire.png"))
 	rscHilite:setAnchorPoint(0.5,.5)
@@ -257,7 +267,15 @@ function Player:updateInventory()
 				end
 			end
 		end
+		
 		counter:setText(tostring(self.resources[resourceName] or 0))
+		
+		if tonumber(self.resources[resourceName]) < 0 then
+            counter:setTextColor(0xff0000)
+        else
+            counter:setTextColor(0xffffff)
+        end
+		
     end
 end
 

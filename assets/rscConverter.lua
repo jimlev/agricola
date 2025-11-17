@@ -84,8 +84,7 @@ function RscConverter:updateButtons(context)
 
 	if self.mi.id == 0 then
         self:setButtonEnabled("grain", p:canAfford({grain = 1}))
-		print("on sort ici, inutile d'aller plus loin")
-        return -- on sort ici, inutile d'aller plus loin
+        return 
     end
 	
 	if not gameManager.bakingTime then

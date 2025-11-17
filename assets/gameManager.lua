@@ -325,6 +325,11 @@ function gameManager:executeAction()
 		self.currentZoomedCard:backInMarket()
 		self.currentZoomedCard = nil
 	end
+	
+	if self.currentAction == "cloture" then
+		snapshot.board:commitFences()
+    end
+	
 	-- on surcharge le player par le snapshot...
 	self:commitSnapshot(player, snapshot)
 	-- ... puis on détruit le snapshot
@@ -701,7 +706,8 @@ function gameManager:dispatchActionToHandler(actionData, snapshot)
 		self:beginSemailleAction(snapshot)
        
 	elseif self.currentAction == "cloture" then
-       	
+       	self:beginFenceAddition(snapshot)
+		
 	elseif self.currentAction == "naissance" then
        	self:beginBirthAction(snapshot)
 		
@@ -726,6 +732,19 @@ end
 
 
 -- Fonctions 'metiers' des differentes actions 
+
+function gameManager:beginFenceAddition(player) -- "cloture"
+	gameManager.pendingFences = {
+		boxes = {},              -- Liste des cases en cours de clôture
+		enclosureIds = {},       -- IDs des enclos temporaires créés ce tour
+		woodCost = 0,            -- Coût total en bois
+		turnCreated = nil        -- Tour de création (pour validation)
+	}
+	player.board:startFenceCreation()
+    player.board:setVisible(true)
+	player.board.isPlayable = true
+end
+
 function gameManager:beginLabourAction(player) -- "labourer"
     player.board:setVisible(true)
 	player.board.isPlayable = true
@@ -813,7 +832,29 @@ function gameManager:handleBoxClick(box)
     local valid = false
 
     -- 2. Vérifier le type d’action
-    if self.currentAction == "labourer" and box.myType == "empty" then
+    if self.currentAction == "cloture" then
+        -- Vérifier si la case est déjà dans les clôtures en cours
+        if snapshot.board:isBoxInPendingFences(box) then
+            -- Retirer la case
+            snapshot.board:removeBoxFromFence(box)
+            
+            -- Masquer validation si plus aucune case
+            if not snapshot.board:hasPendingFences() then
+                self:hideValidButton()
+            end
+        else
+            -- Ajouter la case
+            valid = snapshot.board:addBoxToFence(box)
+            
+            -- Afficher validation si c'est le 1er clic
+            if snapshot.board:hasPendingFences() and not self.pendingAction.hasValidationButton then
+                self:displayValidButton()
+            end
+        end
+        
+        return  -- Pas besoin de gérer le counter pour les clôtures
+			
+	elseif self.currentAction == "labourer" and box.myType == "empty" then
 		box:convertToField()
 		valid = true
 		
@@ -1036,6 +1077,10 @@ function gameManager:showDuoChoicePopup()
     self.actionPopup = self.ui:createChoicePopup(action1, fct1, action2, fct2)
 end
 
+-- GESTION DES CLOTURES
+
+-- FIN DES HELPERS CLOTURES
+
 function gameManager:updateFamilySize()
 	for i, player in ipairs(self.playerList) do
 		print("Check familyBirth", player.name, player.familyBirth)
@@ -1214,7 +1259,12 @@ function gameManager:createPlayerSnapshot(player)
 			snapshotGridBox.hasStable = playerGridBox.hasStable
 			snapshotGridBox.inGrowingPhase = playerGridBox.inGrowingPhase 
 			
+			snapshotGridBox.fenceData = table.clone(playerGridBox.fenceData, nil, true)
+			snapshotGridBox.fenceTurnCreated = playerGridBox.fenceTurnCreated
+			snapshotGridBox.enclosureId = playerGridBox.enclosureId 
+				
 			snapshotGridBox:updateVisual()
+			snapshotGridBox:updateFenceVisuals()
         end
     end
 
@@ -1284,8 +1334,9 @@ function gameManager:commitSnapshot(player, clone)
             local originalGridBox = originalPlayer.board.boxes[row][col]
             local cloneGridBox = clone.board.boxes[row][col]
             if originalGridBox and cloneGridBox then
-				
+			
 				originalGridBox.myType = cloneGridBox.myType 
+				
 				originalGridBox.state = cloneGridBox.state 
 				originalGridBox.mySeed = cloneGridBox.mySeed 
 				originalGridBox.mySeedAmount = cloneGridBox.mySeedAmount
@@ -1294,11 +1345,31 @@ function gameManager:commitSnapshot(player, clone)
 				originalGridBox.pastureLimit = cloneGridBox.pastureLimit
 				originalGridBox.hasStable = cloneGridBox.hasStable
 				originalGridBox.inGrowingPhase = cloneGridBox.inGrowingPhase 
+		
+				originalGridBox.fenceData = table.clone(cloneGridBox.fenceData, nil, true)
+				originalGridBox.fenceTurnCreated = cloneGridBox.fenceTurnCreated
+				originalGridBox.enclosureId = cloneGridBox.enclosureId 
 				
-				originalGridBox:updateVisual("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ")
+				originalGridBox:updateVisual()
+				originalGridBox:updateFenceVisuals()
             end
         end
     end
+
+	originalPlayer.board.enclosures = table.clone(clone.board.enclosures, nil, true)
+	originalPlayer.board.nextEnclosureId = clone.board.nextEnclosureId
+
+	-- Après avoir copié enclosures
+	for enclosureId, enclosure in pairs(originalPlayer.board.enclosures) do
+		local newBoxList = {}
+		for _, cloneBox in ipairs(enclosure.boxes) do
+			-- Retrouver la vraie box correspondante
+			local realBox = originalPlayer.board.boxes[cloneBox.row][cloneBox.col]
+			table.insert(newBoxList, realBox)
+		end
+		enclosure.boxes = newBoxList
+	end
+
 --	print("--------------------------------  < < < 🧑‍🤝‍🧑 Player rétabli")
     return true
 end

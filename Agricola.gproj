@@ -167,6 +167,10 @@
                 <file name="assets/gfx/major/converter/valid_foodConv.png"/>
             </folder>
         </folder>
+        <folder name="fences">
+            <file name="assets/gfx/fences/horizontalFence.png"/>
+            <file name="assets/gfx/fences/verticalFence.png"/>
+        </folder>
         <folder name="UI">
             <file name="assets/gfx/UI/beggingBtn.png"/>
             <file name="assets/gfx/UI/blueInv_focus.png"/>

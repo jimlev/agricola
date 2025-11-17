@@ -31,6 +31,7 @@ function GridBox:init(col, row, player)
         ble      = Bitmap.new(Texture.new("gfx/playerboard/ble_box.png")),
         legume   = Bitmap.new(Texture.new("gfx/playerboard/legume_box.png")),
         etable 	 = Bitmap.new(Texture.new("gfx/playerboard/etable_box.png")),
+		pasture  = Bitmap.new(Texture.new("gfx/playerboard/paturage_box.png")),
         m_wood   = Bitmap.new(Texture.new("gfx/playerboard/woodhouse_box.png")),
         m_clay    = Bitmap.new(Texture.new("gfx/playerboard/clayhouse_box.png")),
         m_stone   = Bitmap.new(Texture.new("gfx/playerboard/stonehouse_box.png"))
@@ -58,6 +59,56 @@ function GridBox:init(col, row, player)
 
     self.badge:setVisible(false)
  
+ -- === NOUVEAU : Gestion des clôtures et enclos ===
+	self.enclosureId = nil
+	self.fenceData = {
+		top = false,
+		bottom = false,
+		left = false,
+		right = false
+	}
+	self.fenceTurnCreated = nil
+	
+	 -- === NOUVEAU : Visuels des clôtures ===
+    self.fenceSprites = {}
+    
+    -- Clôture horizontale du haut
+    local fenceTop = Bitmap.new(Texture.new("gfx/fences/horizontalFence.png"))
+    fenceTop:setAnchorPoint(0.5, 0.5)
+    fenceTop:setPosition(self.backImg:getWidth()/2, 16)
+    self:addChild(fenceTop)
+	fenceTop:setRotation(math.random(5)-3)
+    fenceTop:setVisible(false)
+    self.fenceSprites.top = fenceTop
+    
+    -- Clôture horizontale du bas
+    local fenceBottom = Bitmap.new(Texture.new("gfx/fences/horizontalFence.png"))
+    fenceBottom:setAnchorPoint(0.5, 0.5)
+    fenceBottom:setPosition(self.backImg:getWidth()/2, self.backImg:getHeight()-16)
+    self:addChild(fenceBottom)
+	fenceBottom:setRotation(math.random(5)-2)
+    fenceBottom:setVisible(false)
+    self.fenceSprites.bottom = fenceBottom
+    
+    -- Clôture verticale gauche
+    local fenceLeft = Bitmap.new(Texture.new("gfx/fences/verticalFence.png"))
+	fenceLeft:setAnchorPoint(0.5, 0.5)
+    fenceLeft:setPosition(12, self.backImg:getHeight()/2)
+    self:addChild(fenceLeft)
+	fenceLeft:setRotation(math.random(5)-3)
+    fenceLeft:setVisible(false)
+    self.fenceSprites.left = fenceLeft
+    
+    -- Clôture verticale droite
+    local fenceRight = Bitmap.new(Texture.new("gfx/fences/verticalFence.png"))
+	fenceRight:setAnchorPoint(0.5, 0.5)
+    fenceRight:setPosition(self.backImg:getWidth()-12, self.backImg:getHeight()/2)
+    self:addChild(fenceRight)
+	fenceRight:setRotation(math.random(5)-2)
+    fenceRight:setVisible(false)
+    self.fenceSprites.right = fenceRight
+-- ===	
+
 	self:addEventListener(Event.MOUSE_DOWN, self.onClick, self)
 	
     -- état initial
@@ -89,22 +140,20 @@ function GridBox:getLogicalState()
 			self.state = "legume"
             return "legume"
         end
-    
-    elseif self.myType == "pasture" then
-        return self.hasStable and "etable" or "friche"
-    
     elseif self.myType == "house" then
 		--self.state = "m_"..self.myPlayer.house.rscType
         return self.state
-    else
+    elseif self.myType == "pasture" then
+	print("logicalState dit C'est une pasture!")
+		return "pasture"
+	else
         return self.state or "friche"
     end
 	
 
 end
 
-function GridBox:updateVisual()
-	
+function GridBox:updateVisual()	
     local s = self:getLogicalState()
 
     for _, img in pairs(self.imgs) do
@@ -137,7 +186,6 @@ function GridBox:harvest()
     self:updateVisual()
     return seedType, production
 end
-
 
 -- Helpers pour la gestion des pâtures
 function GridBox:addAnimals(species, count)
@@ -257,20 +305,22 @@ end
 
 
 function GridBox:convertToPasture(capacity)
+print("convertToPasture: ",self.row, self.col,self.myType)
     if self.myType == "empty" then
         self.myType = "pasture"
         self.mySpecies = nil
         self.animals = 0
         self.pastureLimit = capacity or 1  -- capacité de base
 		self.hasStable = false
-		
+			print("convertToPasture | self.myType == empty > myType: ",self.myType)	
         self:updateVisual()
         return true
     end
     return false
 end
 
--- Helpers d'information
+-- ========== HELPERS D'INFORMATION ================
+-- =================================================
 function GridBox:isEmpty()
     return self.myType == "empty"
 end
@@ -312,4 +362,84 @@ function GridBox:getCapacityInfo()
         }
     end
     return nil
+end
+
+
+
+-- ============================================
+-- === GESTION DES CLÔTURES ET ENCLOS ===
+-- ============================================
+
+function GridBox:hasFence(direction)
+    return self.fenceData[direction] == true
+end
+
+function GridBox:addFence(direction, turn)
+    self.fenceData[direction] = true
+    if not self.fenceTurnCreated then
+        self.fenceTurnCreated = turn
+    end
+end
+
+function GridBox:removeFence(direction)
+    if self.fenceTurnCreated and self.fenceTurnCreated < gameManager.currentRound then
+        return false
+    end
+    self.fenceData[direction] = false
+    return true
+end
+
+function GridBox:hasAnyFence()
+    return self.fenceData.top or self.fenceData.bottom or 
+           self.fenceData.left or self.fenceData.right
+end
+
+function GridBox:isInEnclosure()
+    return self.enclosureId ~= nil
+end
+
+function GridBox:canBeFenced()
+    return self.myType == "empty" or self.myType == "pasture"
+end
+
+-- Affiche/masque une clôture
+function GridBox:showFence(direction, temporary)
+    if not self.fenceSprites[direction] then return end
+    
+    self.fenceSprites[direction]:setVisible(true)
+    if temporary then
+        self.fenceSprites[direction]:setAlpha(0.5)
+    else
+        self.fenceSprites[direction]:setAlpha(1)
+    end
+end
+
+function GridBox:hideFence(direction)
+    if not self.fenceSprites[direction] then return end
+    self.fenceSprites[direction]:setVisible(false)
+end
+
+function GridBox:showAllFences(temporary)
+    for direction, _ in pairs(self.fenceData) do
+        if self.fenceData[direction] then
+            self:showFence(direction, temporary)
+        end
+    end
+end
+
+function GridBox:hideAllFences()
+    for direction, _ in pairs(self.fenceSprites) do
+        self:hideFence(direction)
+    end
+end
+
+function GridBox:updateFenceVisuals()
+    for direction, hasFence in pairs(self.fenceData) do
+        if hasFence then
+            local isTemporary = self.myPlayer.board:isBoxInPendingFences(self)
+            self:showFence(direction, isTemporary)
+        else
+            self:hideFence(direction)
+        end
+    end
 end
