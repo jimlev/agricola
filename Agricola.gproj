@@ -85,6 +85,7 @@
             <file name="assets/gfx/playerboard/labourage_box.png"/>
             <file name="assets/gfx/playerboard/legume_box.png"/>
             <file name="assets/gfx/playerboard/paturage_box.png"/>
+            <file name="assets/gfx/playerboard/stable.png"/>
             <file name="assets/gfx/playerboard/stonehouse_box.png"/>
             <file name="assets/gfx/playerboard/woodhouse_box.png"/>
         </folder>

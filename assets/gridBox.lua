@@ -30,7 +30,7 @@ function GridBox:init(col, row, player)
         laboure  = Bitmap.new(Texture.new("gfx/playerboard/labourage_box.png")),
         ble      = Bitmap.new(Texture.new("gfx/playerboard/ble_box.png")),
         legume   = Bitmap.new(Texture.new("gfx/playerboard/legume_box.png")),
-        etable 	 = Bitmap.new(Texture.new("gfx/playerboard/etable_box.png")),
+        --etable 	 = Bitmap.new(Texture.new("gfx/playerboard/etable_box.png")),
 		pasture  = Bitmap.new(Texture.new("gfx/playerboard/paturage_box.png")),
         m_wood   = Bitmap.new(Texture.new("gfx/playerboard/woodhouse_box.png")),
         m_clay    = Bitmap.new(Texture.new("gfx/playerboard/clayhouse_box.png")),
@@ -42,7 +42,14 @@ function GridBox:init(col, row, player)
         img:setVisible(false)
         self:addChild(img)
     end
-	
+
+    local stable = Bitmap.new(Texture.new("gfx/playerboard/stable.png"))
+		stable:setAnchorPoint(0,0)
+		stable:setPosition(32, 24) -- ajuste selon ton sprite
+		self:addChild(stable)
+		self.stable = stable
+		self.stable:setVisible(false)
+		
     -- badge (comme pour les Sign)
     local badge = Bitmap.new(Texture.new("gfx/playerboard/harvestCount_box.png"))
 		badge:setAnchorPoint(0.5,0.5)
@@ -128,7 +135,6 @@ end
 function GridBox:getLogicalState()
     if self.myType == "empty" then
         return "friche"
-    
     elseif self.myType == "field" then
         if not self.mySeed then
 			self.state = "laboure"
@@ -149,7 +155,6 @@ function GridBox:getLogicalState()
 	else
         return self.state or "friche"
     end
-	
 
 end
 
@@ -163,8 +168,12 @@ function GridBox:updateVisual()
     local img = self.imgs[s]
     if img then img:setVisible(true) end
 
-    if s == "ble" or s == "legume" or s == "pasture" then
+    if s == "ble" or s == "legume" then
         self.badgeCount:setText(self.mySeedAmount)
+        self.badge:setVisible(true)
+    elseif s == "pasture" then
+        self.badgeCount:setText(self.pastureLimit)
+		self.badge:setPosition(214, 140)
         self.badge:setVisible(true)
     else
         self.badge:setVisible(false)
@@ -273,6 +282,7 @@ function GridBox:buildStable()
 	end
 	
 	self.hasStable = true
+	self.stable:setVisible(true)
     self:updateVisual()
 	
     return true

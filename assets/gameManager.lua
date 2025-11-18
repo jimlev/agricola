@@ -847,18 +847,10 @@ function gameManager:handleBoxClick(box)
             
             -- Afficher validation si c'est le 1er clic
             if snapshot.board:hasPendingFences() and not self.ui.bouton then
-                --self:displayValidButton()
 				self.ui:validFenceTransaction(snapshot)
-				self.ui.bouton:setY(self.ui.bouton:getY()+ math.random(255)) 
             end
         end
 		self.ui.bouton:updateButtonState(snapshot.board:getPendingFenceCost())
---		if snapshot.resources.wood < 0 then
---			self:hideValidButton()
---		else
---			self:displayValidButton()
---		end
-        
         return  -- Pas besoin de gérer le counter pour les clôtures
 			
 	elseif self.currentAction == "labourer" and box.myType == "empty" then
@@ -878,7 +870,7 @@ function gameManager:handleBoxClick(box)
 			valid = true
 		end		
 
-    elseif self.currentAction == "etable" and box.state == "friche" then
+    elseif self.currentAction == "etable" and box.state == "friche" or box.state == "elevage" then
 		if box:buildStable() then
 			if cost then
 				snapshot:payResources(cost)
@@ -1266,6 +1258,7 @@ function gameManager:createPlayerSnapshot(player)
 			snapshotGridBox.hasStable = playerGridBox.hasStable
 			snapshotGridBox.inGrowingPhase = playerGridBox.inGrowingPhase 
 			
+			snapshotGridBox.stable:setVisible(playerGridBox.stable:isVisible())
 			snapshotGridBox.fenceData = table.clone(playerGridBox.fenceData, nil, true)
 			snapshotGridBox.fenceTurnCreated = playerGridBox.fenceTurnCreated
 			snapshotGridBox.enclosureId = playerGridBox.enclosureId 
@@ -1352,7 +1345,8 @@ function gameManager:commitSnapshot(player, clone)
 				originalGridBox.pastureLimit = cloneGridBox.pastureLimit
 				originalGridBox.hasStable = cloneGridBox.hasStable
 				originalGridBox.inGrowingPhase = cloneGridBox.inGrowingPhase 
-		
+				
+				originalGridBox.stable:setVisible(cloneGridBox.stable:isVisible())
 				originalGridBox.fenceData = table.clone(cloneGridBox.fenceData, nil, true)
 				originalGridBox.fenceTurnCreated = cloneGridBox.fenceTurnCreated
 				originalGridBox.enclosureId = cloneGridBox.enclosureId 
