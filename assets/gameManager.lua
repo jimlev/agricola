@@ -327,7 +327,7 @@ function gameManager:executeAction()
 	end
 	
 	if self.currentAction == "cloture" then
-		snapshot.board:commitFences()
+	--	snapshot.board:commitFences()
     end
 	
 	-- on surcharge le player par le snapshot...
@@ -648,10 +648,12 @@ function gameManager:endGame()
     -- TODO: afficher scores, retour menu, etc. 
 end
 
-
+-- ===========================================================
+-- =================  SPECIAL SPECIAL SPECIAL   ==============
 -- ===========================================================
 -- =====================   SPECIAL ACTIONS  ==================
 -- ===========================================================
+
 function gameManager:handleSpecialAction(pending)
     local p = pending or self.pendingAction
     local player = p.player
@@ -740,9 +742,10 @@ function gameManager:beginFenceAddition(player) -- "cloture"
 		woodCost = 0,            -- Coût total en bois
 		turnCreated = nil        -- Tour de création (pour validation)
 	}
+	
 	player.board:startFenceCreation()
     player.board:setVisible(true)
-	player.board.isPlayable = true
+	player.board.isPlayable = true 
 end
 
 function gameManager:beginLabourAction(player) -- "labourer"
@@ -838,19 +841,23 @@ function gameManager:handleBoxClick(box)
             -- Retirer la case
             snapshot.board:removeBoxFromFence(box)
             
-            -- Masquer validation si plus aucune case
-            if not snapshot.board:hasPendingFences() then
-                self:hideValidButton()
-            end
         else
             -- Ajouter la case
             valid = snapshot.board:addBoxToFence(box)
             
             -- Afficher validation si c'est le 1er clic
-            if snapshot.board:hasPendingFences() and not self.pendingAction.hasValidationButton then
-                self:displayValidButton()
+            if snapshot.board:hasPendingFences() and not self.ui.bouton then
+                --self:displayValidButton()
+				self.ui:validFenceTransaction(snapshot)
+				self.ui.bouton:setY(self.ui.bouton:getY()+ math.random(255)) 
             end
         end
+		self.ui.bouton:updateButtonState(snapshot.board:getPendingFenceCost())
+--		if snapshot.resources.wood < 0 then
+--			self:hideValidButton()
+--		else
+--			self:displayValidButton()
+--		end
         
         return  -- Pas besoin de gérer le counter pour les clôtures
 			

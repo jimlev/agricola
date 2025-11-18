@@ -226,6 +226,60 @@ function UI:queueInfo(title, text, duration, callback)
     self:processQueue()
 end
 
+function UI:validFenceTransaction(player)
+
+    local bouton = Bitmap.new(Texture.new("gfx/positron.png"))
+    bouton:setAnchorPoint(1, 0.5)
+    bouton:setPosition(gRight - 80, gBottom / 2)
+    self:addChild(bouton)
+    self.bouton = bouton
+
+    local numberFont = TTFont.new("fonts/K2D-Bold.ttf", 48)
+    local count = TextField.new(numberFont, wood)
+    count:setAnchorPoint(0, 0.5)
+    count:setTextColor(0xc70404)
+    count:setPosition(-360, 20)
+    bouton:addChild(count)
+    bouton.count = count
+
+    -- on stocke ici le listener pour pouvoir le retirer plus tard
+    bouton.onClick = function(event)
+        if bouton:hitTestPoint(event.x, event.y) then
+            event:stopPropagation()
+            local parent = bouton:getParent()
+            parent:removeChild(bouton)
+            parent.bouton = nil
+
+            player.board:commitFences()
+            gameManager:executeAction()
+        end
+    end
+
+    function bouton:updateButtonState(wood)
+        local woodNeeded = wood
+        local woodAvailable = player.resources.wood or 0
+
+        self:setTexture(Texture.new("gfx/UI/fenceWoodBtn.png"))
+        self.count:setText(woodNeeded)
+
+        if woodAvailable >= 0 then
+            self.count:setTextColor(0x533831)
+			self:setAlpha(1)
+            -- Ajouter le listener
+            self:addEventListener(Event.MOUSE_DOWN, self.onClick)
+
+        else
+            self.count:setTextColor(0xe70000)
+			self:setAlpha(.7)
+            -- 🔥 Retirer correctement
+            self:removeEventListener(Event.MOUSE_DOWN, self.onClick)
+        end
+    end
+
+    bouton:updateButtonState(0)
+end
+
+-- ======================= out of class
 function createOverlay()
 	local overlay = Shape.new()
 		overlay:setFillStyle(Shape.SOLID, 0x000000, .8)

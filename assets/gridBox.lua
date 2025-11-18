@@ -144,7 +144,7 @@ function GridBox:getLogicalState()
 		--self.state = "m_"..self.myPlayer.house.rscType
         return self.state
     elseif self.myType == "pasture" then
-	print("logicalState dit C'est une pasture!")
+		self.state = "elevage"
 		return "pasture"
 	else
         return self.state or "friche"
@@ -162,8 +162,8 @@ function GridBox:updateVisual()
     
     local img = self.imgs[s]
     if img then img:setVisible(true) end
-    
-    if s == "ble" or s == "legume" then
+
+    if s == "ble" or s == "legume" or s == "pasture" then
         self.badgeCount:setText(self.mySeedAmount)
         self.badge:setVisible(true)
     else
@@ -202,6 +202,7 @@ function GridBox:addAnimals(species, count)
     end
     
     self.mySpecies = species
+	self.state = species
     self.animals = self.animals + count
     self:updateVisual()
     return true

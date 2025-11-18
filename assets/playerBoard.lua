@@ -411,7 +411,7 @@ function PlayerBoard:addBoxToFence(box)
     local diff = newCost - oldCost
 	
 	self.player:payResources({wood = diff},true)	
-    
+	
     print(string.format("✅ Case [%d,%d] ajoutée | Coût: %d bois", 
         box.col, box.row, self.pendingFences.woodCost))
     
@@ -453,8 +453,7 @@ function PlayerBoard:removeBoxFromFence(box)
     if diff > 0 then
         self.player:addResource("wood", diff)
     end
-
-    
+		
     print(string.format("❌ Case [%d,%d] retirée | Coût: %d bois", 
         box.col, box.row, self.pendingFences.woodCost))
     
@@ -590,18 +589,6 @@ function PlayerBoard:cancelFences()
     
     print("❌ Création de clôtures annulée")
 end
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 function PlayerBoard:debugEnclosures()

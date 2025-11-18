@@ -168,7 +168,13 @@
             </folder>
         </folder>
         <folder name="fences">
+            <file name="assets/gfx/fences/cowMeeple.png"/>
             <file name="assets/gfx/fences/horizontalFence.png"/>
+            <file name="assets/gfx/fences/pigMeeple.png"/>
+            <file name="assets/gfx/fences/sheepMeeple.png"/>
+            <file name="assets/gfx/fences/small_cowMeeple.png"/>
+            <file name="assets/gfx/fences/small_pigMeeple.png"/>
+            <file name="assets/gfx/fences/small_sheepMeeple.png"/>
             <file name="assets/gfx/fences/verticalFence.png"/>
         </folder>
         <folder name="UI">
@@ -185,6 +191,7 @@
             <file name="assets/gfx/UI/cancelBtn.png"/>
             <file name="assets/gfx/UI/continueBtn.png"/>
             <file name="assets/gfx/UI/eatfoodBtn.png"/>
+            <file name="assets/gfx/UI/fenceWoodBtn.png"/>
             <file name="assets/gfx/UI/focusP_Token.png"/>
             <file name="assets/gfx/UI/greenInv_focus.png"/>
             <file name="assets/gfx/UI/greenP_Token.png"/>
