@@ -345,6 +345,222 @@ function PlayerBoard:getAdjacentBoxes(box)
     return adjacent
 end
 
+-- ====== GESTION DES ENCLOS / SPECIES  =======
+-- ============================================
+
+-- Cherche le meilleur enclos pour accueillir "quantity" animaux de type "species".
+-- Retourne :
+--   {
+--       type = "enclosure" | "house" | "none",
+--       enclosureId = id ou nil,
+--       canPlace = nombre possible,
+--       leftover = ce qui ne peut pas être placé
+--   }
+function PlayerBoard:findBestEnclosure(species, quantity)
+	print("-------------->>>>>>  Recherche d'enclos pour ",quantity,species)
+    local groupSame = {}
+    local groupEmpty = {}
+
+    -- Parcours de tous les enclos
+    for id, enc in pairs(self.enclosures) do
+        local free = self:getEnclosureFreeSpace(enc, species)
+        local hasOther = self:enclosureHasOtherSpecies(enc, species)
+        local isEmpty = self:isEnclosureEmpty(enc)
+
+        if hasOther then
+            -- pas candidat
+        else
+            local count = enc.animals[species] or 0
+
+            -- groupe 1 : enclos contenant déjà l’espèce
+            if count > 0 and free > 0 then
+                table.insert(groupSame, {enc = enc, free = free})
+            
+            -- groupe 2 : enclos vides
+            elseif isEmpty and free > 0 then
+                table.insert(groupEmpty, {enc = enc, free = free})
+            end
+        end
+    end
+	print("-------------->>>>>>  Recherche d'enclos",species," ou vide: ",#groupSame,#groupEmpty)
+	print("=== findBestEnclosure ===")
+--print("species =", species, " quantity =", quantity)
+--
+--print("Board ref =", self)
+--print("Nb enclos =", self.enclosures and #self.enclosures or "nil")
+--
+--for id, enc in pairs(self.enclosures or {}) do
+--    print(" → Enclos", id, ":", #enc.boxes, "cases / capacity", enc.capacity)
+--end
+    ------------------------------------------------------------
+    -- 1) PRIORITÉ : étendre un enclos contenant déjà l’espèce
+    ------------------------------------------------------------
+    if #groupSame > 0 then
+        -- tri par freeSpace descendant
+        table.sort(groupSame, function(a,b) return a.free > b.free end)
+
+        local best = groupSame[1]
+        local canPlace = math.min(quantity, best.free)
+
+        return {
+            type = "enclosure",
+            enclosureId = best.enc.id,
+            canPlace = canPlace,
+            leftover = quantity - canPlace
+        }
+    end
+
+    ------------------------------------------------------------
+    -- 2) SINON : choisir un enclos vide
+    ------------------------------------------------------------
+    if #groupEmpty > 0 then
+        -- tri par capacité croissante (évite gaspillage)
+        table.sort(groupEmpty, function(a,b)
+            return a.enc.capacity < b.enc.capacity
+        end)
+
+        local best = groupEmpty[1]
+        local canPlace = math.min(quantity, best.free)
+
+        return {
+            type = "enclosure",
+            enclosureId = best.enc.id,
+            canPlace = canPlace,
+            leftover = quantity - canPlace
+        }
+		
+    end
+
+    ------------------------------------------------------------
+    -- 3) SINON : maison (1 max, si vide ou même espèce)
+    ------------------------------------------------------------
+    if (self.houseAnimal == nil or self.houseAnimal == species) and self.player.resources.houseSpace > 0 then
+
+        local canPlace = math.min(quantity, 1)
+        return {
+            type = "house",
+            enclosureId = nil,
+            canPlace = canPlace,
+            leftover = quantity - canPlace
+        }
+    end
+
+    ------------------------------------------------------------
+    -- 4) AUCUN EMPLACEMENT POSSIBLE
+    ------------------------------------------------------------
+    return {
+        type = "none",
+        enclosureId = nil,
+        canPlace = 0,
+        leftover = quantity
+    }
+end
+
+-- Place automatiquement des animaux dans les enclos du joueur.
+-- Ne déplace JAMAIS les animaux déjà présents.
+-- Ne choisit que des enclos compatibles.
+-- Remplit d'abord les enclos qui contiennent déjà l'espèce.
+-- Puis remplit les enclos vides.
+-- Retourne (placed, leftover).
+
+function PlayerBoard:autoPlaceAnimals(species, quantity)
+    print("\n=== autoPlaceAnimals ===")
+    print("Species =", species, " | Quantity =", quantity)
+
+    if quantity <= 0 then
+        return 0, 0
+    end
+
+    local placed = 0
+    local leftover = quantity
+
+    --------------------------------------------------------------------------
+    -- 1. Priorité : remplir les enclos déjà occupés par cette espèce
+    --------------------------------------------------------------------------
+    for id, enclosure in pairs(self.enclosures) do
+        -- espèce identique ?
+        if enclosure.animals[species] and enclosure.animals[species] > 0 then
+            local current = enclosure.animals[species]
+            local freeSpace = enclosure.capacity - current
+
+            if freeSpace > 0 then
+                local amount = math.min(leftover, freeSpace)
+                enclosure.animals[species] = current + amount
+
+                placed = placed + amount
+                leftover = leftover - amount
+
+                print("→ Remplissage enclos existant #" .. id .. " +" .. amount)
+
+                if leftover == 0 then
+                    return placed, 0
+                end
+            end
+        end
+    end
+
+    --------------------------------------------------------------------------
+    -- 2. Deuxième priorité : enclos vides
+    --------------------------------------------------------------------------
+    for id, enclosure in pairs(self.enclosures) do
+        -- enclos totalement vide ?
+        if self:isEnclosureEmpty(enclosure) then
+            local freeSpace = enclosure.capacity
+
+            if freeSpace > 0 then
+                local amount = math.min(leftover, freeSpace)
+                enclosure.animals[species] = amount -- première pose
+
+                placed = placed + amount
+                leftover = leftover - amount
+
+                print("→ Remplissage enclos vide #" .. id .. " +" .. amount)
+
+                if leftover == 0 then
+                    return placed, 0
+                end
+            end
+        end
+    end
+
+    --------------------------------------------------------------------------
+    -- 3. Aucune place pour le surplus → leftover renvoyé
+    --------------------------------------------------------------------------
+    print("=== Résultat autoPlaceAnimals ===")
+    print("Placed:", placed, " | Leftover:", leftover)
+
+    return placed, leftover
+end
+
+-- Espace disponible dans un enclos	
+function PlayerBoard:getEnclosureFreeSpace(enc, species)
+    local current = enc.animals[species] or 0
+    return enc.capacity - current
+end
+
+-- Retourne true si l'enclos ne contient aucun animal (toutes espèces confondues)
+function PlayerBoard:isEnclosureEmpty(enclosure)
+    for species, count in pairs(enclosure.animals) do
+        if count > 0 then
+            return false
+        end
+    end
+    return true
+end
+
+
+-- l'enclos contient-il une autre espece?
+function PlayerBoard:enclosureHasOtherSpecies(enc, species)
+    for sp, qty in pairs(enc.animals) do
+        if qty > 0 and sp ~= species then
+            return true
+        end
+    end
+    return false
+end
+
+	
+
 -- ============================================
 -- === CRÉATION TEMPORAIRE DE CLÔTURES ===
 -- ============================================
@@ -541,26 +757,32 @@ function PlayerBoard:getOppositeDirection(direction)
     return opposites[direction]
 end
 
-
 function PlayerBoard:commitFences()
     if #self.pendingFences.boxes == 0 then
         print("⚠️ Aucune clôture à valider")
         return false
     end
     
-    -- Valider toutes les clôtures (alpha = 1)
-    for _, box in ipairs(self.pendingFences.boxes) do
-        for direction, hasFence in pairs(box.fenceData) do
-            if hasFence then
-                box:showFence(direction, false)  -- false = pas temporaire
+    -- Séparer les cases en groupes connectés
+    local groups = self:findConnectedGroups(self.pendingFences.boxes)
+    
+    print(string.format("🔍 %d groupe(s) d'enclos détecté(s)", #groups))
+    
+    -- Créer un enclos par groupe
+    for i, group in ipairs(groups) do
+        -- Valider les clôtures du groupe (alpha = 1)
+        for _, box in ipairs(group) do
+            for direction, hasFence in pairs(box.fenceData) do
+                if hasFence then
+                    box:showFence(direction, false)  -- false = pas temporaire
+                end
             end
         end
+        
+        -- Créer l'enclos
+        local enclosureId = self:createEnclosure(group, gameManager.currentRound)
+        print(string.format("✅ Enclos #%d créé avec %d cases", enclosureId, #group))
     end
-    
-    -- Créer l'enclos
-    local enclosureId = self:createEnclosure(self.pendingFences.boxes, gameManager.currentRound)
-    
-    print(string.format("✅ Enclos #%d créé avec %d cases", enclosureId, #self.pendingFences.boxes))
     
     -- Nettoyer l'état temporaire
     self.pendingFences = {
@@ -569,6 +791,48 @@ function PlayerBoard:commitFences()
     }
     
     return true
+end
+
+function PlayerBoard:findConnectedGroups(boxes)
+    local groups = {}
+    local visited = {}
+    
+    for _, box in ipairs(boxes) do
+        if not visited[box] then
+            local group = {}
+            self:collectConnectedBoxes(box, boxes, visited, group)
+            table.insert(groups, group)
+        end
+    end
+    
+    return groups
+end
+
+function PlayerBoard:collectConnectedBoxes(box, allBoxes, visited, group)
+    visited[box] = true
+    table.insert(group, box)
+    
+    -- Récupérer les voisins de cette case
+    local adjacent = self:getAdjacentBoxes(box)
+    
+    for _, adj in ipairs(adjacent) do
+        local adjBox = adj.box
+        
+        if not visited[adjBox] then
+            -- Vérifier si adjBox est dans allBoxes (les cases clôturées)
+            local isInPending = false
+            for _, b in ipairs(allBoxes) do
+                if b == adjBox then
+                    isInPending = true
+                    break
+                end
+            end
+            
+            if isInPending then
+                self:collectConnectedBoxes(adjBox, allBoxes, visited, group)
+            end
+        end
+    end
 end
 
 function PlayerBoard:cancelFences()

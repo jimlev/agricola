@@ -327,7 +327,7 @@ function gameManager:executeAction()
 	end
 	
 	if self.currentAction == "cloture" then
-	--	snapshot.board:commitFences()
+		snapshot.board:commitFences()
     end
 	
 	-- on surcharge le player par le snapshot...
@@ -455,6 +455,7 @@ function gameManager:cancelAction()
 --    if snapshot and snapshot.board then 
 --        snapshot.board:setVisible(false)
 --    end
+
 	self.inBuyCardMode = false -- les cartes ne sont plus achetables
 	-- et je confirme l'achat de celle sélectionnée
 	if self.currentZoomedCard ~= nil then 
@@ -531,7 +532,7 @@ function gameManager:initPendingCreation(signId, meeple)
 		self.pendingAction.step = 1
 		
 		local xtraData = actionDB:getActionById(sign.actionData.extraActionId )
-	print("recuperation des données de l'eXTRA:", xtraData.cost, xtraData.noCount or 5)
+
 		if xtraData.cost then
 			local _, maxQuantity = player:canAfford(xtraData.cost)
 			self.pendingAction2.actionCounter = maxQuantity
@@ -695,8 +696,10 @@ function gameManager:dispatchActionToHandler(actionData, snapshot)
 	 
     if self.currentAction == "labourer" then
         self:beginLabourAction(snapshot)
+		
     elseif self.currentAction == "construire" then
         self:beginNewRoom(snapshot)
+		
 	elseif self.currentAction == "first_player" then
       	self.nextFirstPlayer = snapshot.originalPlayer
 		
@@ -727,6 +730,9 @@ function gameManager:dispatchActionToHandler(actionData, snapshot)
 			
 	elseif self.currentAction == "etable" then
       	self:beginAddStable(snapshot)	
+		
+	elseif self.currentAction == "sheep" then
+      	self:beginAddSheep(snapshot)	
     else
         print("⚠️ Tentative d'action inconnue : " .. tostring(action),tostring(action.title))
     end
@@ -783,6 +789,21 @@ function gameManager:beginRenovation(player)  -- "renovation"
 	self:displayContinueButton()
 end
 
+function gameManager:beginAddSheep(player)   -- "mouton"
+    player.board:setVisible(true)
+	player.board.isPlayable = true
+
+	local placed, leftover = player.board:autoPlaceAnimals("sheep", self.pendingAction.sign.stock)
+
+  --  player.board:findBestEnclosure("sheep", self.pendingAction.sign.stock)
+--	local sheepCount = self.pendingAction.sign.stock
+--	local boxe = player.board.boxes[3] 
+--	if boxe:canAddAnimals("sheep", sheepCount) then
+--		boxe:addAnimals("sheep", sheepCount)
+--		valid = true	
+--	end
+end
+ 
 function gameManager:beginAddStable(player)   -- "etable"
     player.board:setVisible(true)
 	player.board.isPlayable = true
@@ -809,7 +830,6 @@ function gameManager:beginBuyImprovement(player)   -- "Amelioration"
 	self.inBuyCardMode = true
 	self.marketLayer:setVisible(true)	
 	self:updateMajorCardsMarket()
-
 end
 -- +++++++++++++++++++++++++++++++++++++ CLIC CLIC CLIC +++++++++++++++++++++++++++++++++++++
 
@@ -830,7 +850,9 @@ function gameManager:handleBoxClick(box)
     -- 1. Si plus de coups disponibles, on ignore
     if counter <= 0 then
         return
-    end 
+    end
+
+	print("gameManager handleBoxClick :",self.currentAction )
 
     local valid = false
 
@@ -846,10 +868,11 @@ function gameManager:handleBoxClick(box)
             valid = snapshot.board:addBoxToFence(box)
             
             -- Afficher validation si c'est le 1er clic
-            if snapshot.board:hasPendingFences() and not self.ui.bouton then
+            if not self.ui.bouton then
 				self.ui:validFenceTransaction(snapshot)
             end
         end
+		
 		self.ui.bouton:updateButtonState(snapshot.board:getPendingFenceCost())
         return  -- Pas besoin de gérer le counter pour les clôtures
 			
@@ -875,14 +898,17 @@ function gameManager:handleBoxClick(box)
 			if cost then
 				snapshot:payResources(cost)
 				snapshot:updateInventory()
+				valid = true	
 			end
-			valid = true	
 		end
+		
+	elseif self.currentAction == "sheep" and box.state == "friche" or box.state == "elevage" then
+		--local sheepCount = self.pendingAction.sign.stock
+
     end
 
     -- 3. Si clic valide, on décrémente et on affiche les bons boutons
     if valid then
-
         if self.pendingAction.step == 1 then
             self:displayContinueButton()
 			self.pendingAction.actionCounter = self.pendingAction.actionCounter - 1
@@ -1257,7 +1283,7 @@ function gameManager:createPlayerSnapshot(player)
 			snapshotGridBox.pastureLimit = playerGridBox.pastureLimit
 			snapshotGridBox.hasStable = playerGridBox.hasStable
 			snapshotGridBox.inGrowingPhase = playerGridBox.inGrowingPhase 
-			
+	
 			snapshotGridBox.stable:setVisible(playerGridBox.stable:isVisible())
 			snapshotGridBox.fenceData = table.clone(playerGridBox.fenceData, nil, true)
 			snapshotGridBox.fenceTurnCreated = playerGridBox.fenceTurnCreated
@@ -1267,6 +1293,19 @@ function gameManager:createPlayerSnapshot(player)
 			snapshotGridBox:updateFenceVisuals()
         end
     end
+	
+	snapshot.board.enclosures = table.clone(originalPlayer.board.enclosures, nil, true)
+	snapshot.board.nextEnclosureId = originalPlayer.board.nextEnclosureId
+
+	-- Et re-mapper les boxes clonées
+	for _, enclosure in pairs(snapshot.board.enclosures) do
+		local newBoxList = {}
+		for _, origBox in ipairs(enclosure.boxes) do
+			local snapBox = snapshot.board.boxes[origBox.row][origBox.col]
+			table.insert(newBoxList, snapBox)
+		end
+		enclosure.boxes = newBoxList
+	end
 
 	for i = 2, #originalPlayer.converters do -- je ne prends pas l'index 1 qui est spawn a la créa du joueur
 		local converter = RscConverter.new(snapshot, originalPlayer.converters[i].mi, 0)

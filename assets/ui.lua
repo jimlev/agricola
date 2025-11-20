@@ -250,7 +250,7 @@ function UI:validFenceTransaction(player)
             parent:removeChild(bouton)
             parent.bouton = nil
 
-            player.board:commitFences()
+            --player.board:commitFences() -- line 253
             gameManager:executeAction()
         end
     end

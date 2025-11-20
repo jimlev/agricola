@@ -5,7 +5,7 @@ local numberFont = TTFont.new("fonts/K2D-Bold.ttf",28)
 GridBox = Core.class(Sprite)
 
 function GridBox:init(col, row, player)
-	local backImg = Bitmap.new(Texture.new("gfx/playerboard/bgherbe_box.png"))
+	local backImg = Bitmap.new(Texture.new("gfx/playerboard/bgherbe_box2.png"))
 	self:addChild(backImg)
 	self.backImg = backImg
 	
@@ -18,7 +18,7 @@ function GridBox:init(col, row, player)
 	self.myType = "empty" -- "field", "pasture", "house"
 		self.mySeed = nil -- "ble", "vegetable" ou nil (default) 
 		self.mySeedAmount = 0 -- nb de graines restantes 
-		self.mySpecies = nil -- "sheep", "boar", "cattle" 
+		self.mySpecies = nil -- "sheep", "pig", "cattle" 
 		self.animals = 0 -- nb d’animaux dans la case 
 		self.pastureLimit = 0 -- capacité max 
 		self.hasStable = false -- if true >>> pastureLimit +2
@@ -26,12 +26,11 @@ function GridBox:init(col, row, player)
 		
     -- visuels possibles
     self.imgs = {
-        friche   = Bitmap.new(Texture.new("gfx/playerboard/friche_box.png")),
-        laboure  = Bitmap.new(Texture.new("gfx/playerboard/labourage_box.png")),
+        friche   = Bitmap.new(Texture.new("gfx/playerboard/friche_box2.png")),
+        laboure  = Bitmap.new(Texture.new("gfx/playerboard/labourage_box2.png")),
         ble      = Bitmap.new(Texture.new("gfx/playerboard/ble_box.png")),
         legume   = Bitmap.new(Texture.new("gfx/playerboard/legume_box.png")),
-        --etable 	 = Bitmap.new(Texture.new("gfx/playerboard/etable_box.png")),
-		pasture  = Bitmap.new(Texture.new("gfx/playerboard/paturage_box.png")),
+		pasture  = Bitmap.new(Texture.new("gfx/playerboard/paturage_box2.png")),
         m_wood   = Bitmap.new(Texture.new("gfx/playerboard/woodhouse_box.png")),
         m_clay    = Bitmap.new(Texture.new("gfx/playerboard/clayhouse_box.png")),
         m_stone   = Bitmap.new(Texture.new("gfx/playerboard/stonehouse_box.png"))
@@ -200,19 +199,12 @@ end
 function GridBox:addAnimals(species, count)
     if self.myType ~= "pasture" then return false end
     
-    -- Vérifier si on peut mélanger les espèces (règles Agricola)
-    if self.animals > 0 and self.mySpecies ~= species then
-        return false  -- pas de mélange d'espèces
-    end
-    
-    -- Vérifier la capacité
-    if self.animals + count > self.pastureLimit then
-        return false  -- pas assez de place
-    end
-    
     self.mySpecies = species
-	self.state = species
+
     self.animals = self.animals + count
+	local spritePath = "gfx/fences/"..species.."Meeple.png"
+	self.animalSprite = Bitmap.new(Texture.new(spritePath))
+	self:addChild(self.animalSprite)
     self:updateVisual()
     return true
 end

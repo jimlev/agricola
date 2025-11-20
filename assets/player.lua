@@ -426,6 +426,98 @@ end
 -- ============================== DEBUG +++++++++++++++++++++++
 function Player:printFarmInfo()
     print("=== État de la ferme de " .. tostring(self.name or "Joueur inconnu") .. " ===")
+    
+    if not self.board or not self.board.boxes then
+        print("⚠️  Pas de plateau associé à ce joueur.")
+        return
+    end
+
+    local typeIcons = {
+        house = "🏠",
+        field = "🌾", 
+        empty = "⿻️",
+        pasture = "🐑"
+    }
+
+    -- === 1) LISTE DES CASES NON VIDES ===
+    for row = 1, #self.board.boxes do
+        for col = 1, #self.board.boxes[row] do
+            local box = self.board.boxes[row][col]
+            if box and box.myType and box.myType ~= "empty" then
+                local icon = typeIcons[box.myType] or "❓"
+
+                local extra = {}
+
+                if box.mySeed then table.insert(extra, "graine: " .. box.mySeed) end
+                if box.mySeedAmount and box.mySeedAmount > 0 then
+                    table.insert(extra, "quantité: " .. box.mySeedAmount)
+                end
+                if box.inGrowingPhase then table.insert(extra, "🌱 croissance") end
+                if box.hasStable then table.insert(extra, "🎠 étable") end
+                if box.enclosureId then table.insert(extra, "enclos #" .. box.enclosureId) end
+
+                if box.state and box.state ~= "normal" then
+                    table.insert(extra, "état: " .. tostring(box.state))
+                end
+
+                local line = string.format("%s Case [%d,%d] | type: %s",
+                    icon, col, row, box.myType)
+
+                if #extra > 0 then
+                    line = line .. " | " .. table.concat(extra, " | ")
+                end
+
+                print(line)
+            end
+        end
+    end
+
+    -- === 2) LISTE DES ENCLOS ===
+    print("\n=== ENCLOS ===")
+
+    local enclosures = self.board.enclosures or {}
+
+    if next(enclosures) == nil then
+        print("Aucun enclos.")
+    else
+        for id, enclosure in pairs(enclosures) do
+            local speciesList = {}
+            local totalAnimals = 0
+
+            for species, count in pairs(enclosure.animals or {}) do
+                if count > 0 then
+                    table.insert(speciesList, species .. "=" .. count)
+                    totalAnimals = totalAnimals + count
+                end
+            end
+
+            local animalsStr = (#speciesList > 0)
+                and table.concat(speciesList, ", ")
+                or "vide"
+
+            print(string.format(
+                "• Enclos #%d : %d cases | capacité=%d | animaux=%s",
+                id,
+                #enclosure.boxes,
+                enclosure.capacity or 0,
+                animalsStr
+            ))
+
+            -- Sous-liste des cases de l’enclos
+            local coords = {}
+            for _, box in ipairs(enclosure.boxes) do
+                table.insert(coords, string.format("[%d,%d]", box.col, box.row))
+            end
+            print("    Cases : " .. table.concat(coords, ", "))
+        end
+    end
+
+    print("=== Fin de l'état de la ferme ===\n")
+end
+
+
+function Player:old_printFarmInfo()
+    print("=== État de la ferme de " .. tostring(self.name or "Joueur inconnu") .. " ===")
     if not self.board or not self.board.boxes then
         print("⚠️  Pas de plateau associé à ce joueur.")
         return
@@ -486,33 +578,4 @@ function Player:printFarmInfo()
         end
     end
     print("=== Fin de l'état de la ferme ===")
-end
-			
-function Player:Old_printFarmInfo()
-    print("=== État de la ferme de " .. tostring(self.name or "Joueur inconnu") .. " ===")
-    if not self.board or not self.board.boxes then
-        print("⚠️  Pas de plateau associé à ce joueur.")
-        return
-    end
-
-    for row = 1, #self.board.boxes do
-        for col = 1, #self.board.boxes[row] do
-            local box = self.board.boxes[row][col]
-            if box then
-                local info = string.format(
-                    "Case [%d,%d] | type: %s | state: %s | seed: %s | seedAmount: %s | growing ? %s",
-                    col,
-                    row,
-                    tostring(box.myType or "nil"),
-                    tostring(box.myState or "nil"),
-                    tostring(box.mySeed),
-                    tostring(box.mySeedAmount),
-					tostring(box.inGrowingPhase)
-                )
-                print(info)
-            else
-                print(string.format("Case [%d,%d] est vide (nil)", col, row))
-            end
-        end
-    end
 end

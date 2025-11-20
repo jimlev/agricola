@@ -69,7 +69,8 @@ local ACTIONS_DATA = {
           extraActionId = 25, -- cuisson comme extra
           comment = "Cuire du pain\n(nécessite un four)" },
 
-        { id = 13, title = "1 Mouton", icon = "gfx/signs/ic_mouton.png",
+        { id = 13, title = "Mouton", icon = "gfx/signs/ic_mouton.png",
+          special = "sheep",	
           resources = { { rscType="sheep", amount=1 } },
           accumulate = true, col = 5, row = 3,
           comment = "+1 mouton par tour" },

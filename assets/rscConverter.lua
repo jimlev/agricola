@@ -18,7 +18,7 @@ function RscConverter:init(player, source, options)
     -- état
 	self.useCount = 0
     self.pendingFood = 0
-    self.refund = { grain = 0, vegetable = 0, sheep = 0, boar = 0, cattle = 0, wood = 0, reed = 0, clay = 0  }
+    self.refund = { grain = 0, vegetable = 0, sheep = 0, pig = 0, cattle = 0, wood = 0, reed = 0, clay = 0  }
     self.buttons = {}
 
 	self:createVisualUI(self.mi.uiModel)
@@ -234,7 +234,7 @@ end
 
 function RscConverter:resetPending()
     self.pendingFood = 0
-	self.refund = { grain = 0, vegetable = 0, sheep = 0, boar = 0, cattle = 0, wood = 0, reed = 0, clay = 0  }
+	self.refund = { grain = 0, vegetable = 0, sheep = 0, pig = 0, cattle = 0, wood = 0, reed = 0, clay = 0  }
 end
 
 
