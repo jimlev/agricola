@@ -19,19 +19,19 @@ function GridBox:init(col, row, player)
 		self.mySeed = nil -- "ble", "vegetable" ou nil (default) 
 		self.mySeedAmount = 0 -- nb de graines restantes 
 		self.mySpecies = nil -- "sheep", "pig", "cattle" 
-		self.animals = 0 -- nb d’animaux dans la case 
+		self.animals = {sheep = 0, pig = 0, cattle = 0}  -- Animaux dans cette case
 		self.pastureLimit = 0 -- capacité max 
 		self.hasStable = false -- if true >>> pastureLimit +2
 		self:setGrowingStatus()  -- une graine est-elle en cours de pousse ?
 		
     -- visuels possibles
     self.imgs = {
-        friche   = Bitmap.new(Texture.new("gfx/playerboard/friche_box2.png")),
-        laboure  = Bitmap.new(Texture.new("gfx/playerboard/labourage_box2.png")),
+        friche   = Bitmap.new(Texture.new("gfx/playerboard/friche_box.png")),
+        laboure  = Bitmap.new(Texture.new("gfx/playerboard/labourage_box.png")),
         ble      = Bitmap.new(Texture.new("gfx/playerboard/ble_box.png")),
         legume   = Bitmap.new(Texture.new("gfx/playerboard/legume_box.png")),
-		pasture  = Bitmap.new(Texture.new("gfx/playerboard/paturage_box2.png")),
-        m_wood   = Bitmap.new(Texture.new("gfx/playerboard/woodhouse_box.png")),
+		pasture  = Bitmap.new(Texture.new("gfx/playerboard/paturage_box.png")),
+        m_wood   = Bitmap.new(Texture.new("gfx/positron.png")),
         m_clay    = Bitmap.new(Texture.new("gfx/playerboard/clayhouse_box.png")),
         m_stone   = Bitmap.new(Texture.new("gfx/playerboard/stonehouse_box.png"))
     }
@@ -48,6 +48,25 @@ function GridBox:init(col, row, player)
 		self:addChild(stable)
 		self.stable = stable
 		self.stable:setVisible(false)
+		
+		
+	self.sheepSprite = Bitmap.new(Texture.new("gfx/fences/sheepMeeple.png"))
+		self.sheepSprite:setAnchorPoint(0.5,0.5)
+		self.sheepSprite:setPosition(132,100)
+		self:addChild(self.sheepSprite)
+		self.sheepSprite:setVisible(false)
+
+	self.pigSprite = Bitmap.new(Texture.new("gfx/fences/pigMeeple.png"))
+		self.pigSprite:setAnchorPoint(0.5,0.5)
+		self.pigSprite:setPosition(132,100)		
+		self:addChild(self.pigSprite)
+		self.pigSprite:setVisible(false)
+		
+	self.cattleSprite = Bitmap.new(Texture.new("gfx/fences/cattleMeeple.png"))
+		self.cattleSprite:setAnchorPoint(0.5,0.5)
+		self.cattleSprite:setPosition(132,100)	
+		self:addChild(self.cattleSprite)
+		self.cattleSprite:setVisible(false)	
 		
     -- badge (comme pour les Sign)
     local badge = Bitmap.new(Texture.new("gfx/playerboard/harvestCount_box.png"))
@@ -149,8 +168,8 @@ function GridBox:getLogicalState()
 		--self.state = "m_"..self.myPlayer.house.rscType
         return self.state
     elseif self.myType == "pasture" then
-		self.state = "elevage"
-		return "pasture"
+		self.state = self:getDominantSpecies()
+		return self.state
 	else
         return self.state or "friche"
     end
@@ -170,10 +189,13 @@ function GridBox:updateVisual()
     if s == "ble" or s == "legume" then
         self.badgeCount:setText(self.mySeedAmount)
         self.badge:setVisible(true)
-    elseif s == "pasture" then
-        self.badgeCount:setText(self.pastureLimit)
+    elseif s == "sheep" or s == "pig" or s == "cattle"  then
+        self.badgeCount:setText(#self.animals.."/"..self.pastureLimit)
 		self.badge:setPosition(214, 140)
         self.badge:setVisible(true)
+			
+		local spriteName = s.."Sprite"	
+		self[spriteName]:setVisible(true)
     else
         self.badge:setVisible(false)
     end
@@ -195,46 +217,6 @@ function GridBox:harvest()
     return seedType, production
 end
 
--- Helpers pour la gestion des pâtures
-function GridBox:addAnimals(species, count)
-    if self.myType ~= "pasture" then return false end
-    
-    self.mySpecies = species
-
-    self.animals = self.animals + count
-	local spritePath = "gfx/fences/"..species.."Meeple.png"
-	self.animalSprite = Bitmap.new(Texture.new(spritePath))
-	self:addChild(self.animalSprite)
-    self:updateVisual()
-    return true
-end
-
-function GridBox:removeAnimals(count)
-    if self.myType ~= "pasture" or count > self.animals then return 0 end
-    
-    local removed = math.min(count, self.animals)
-    self.animals = self.animals - removed
-    
-    -- Si plus d'animaux, reset l'espèce
-    if self.animals == 0 then
-        self.mySpecies = nil
-    end
-    
-    self:updateVisual()
-    return removed
-end
-
-function GridBox:canAddAnimals(species, count)
-    if self.myType ~= "pasture" then return false end
-    
-    -- Vérifier mélange d'espèces
-    if self.animals > 0 and self.mySpecies ~= species then
-        return false
-    end
-    
-    -- Vérifier capacité
-    return self.animals + count <= self.pastureLimit
-end
 
 -- *$*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$
 -- *$*$*$*$*$*$*$ Helpers pour la conversion de type
@@ -312,9 +294,9 @@ print("convertToPasture: ",self.row, self.col,self.myType)
     if self.myType == "empty" then
         self.myType = "pasture"
         self.mySpecies = nil
-        self.animals = 0
+		self.animals = {sheep = 0, pig = 0, cattle = 0}  -- Animaux dans cette case
         self.pastureLimit = capacity or 1  -- capacité de base
-		self.hasStable = false
+		--self.hasStable = false
 			print("convertToPasture | self.myType == empty > myType: ",self.myType)	
         self:updateVisual()
         return true
@@ -341,11 +323,16 @@ function GridBox:isPasture()
 end
 
 function GridBox:hasSpace(count)
-    if self.myType == "pasture" then
-        return self.animals + (count or 1) <= self.pastureLimit
-    end
-    return false
+    count = count or 1
+
+    if self.myType ~= "pasture" then return false end
+
+    local total = 0
+    for _, n in pairs(self.animals) do total = total + n end
+
+    return total + count <= self.pastureLimit
 end
+
 
 function GridBox:setGrowingStatus()
     if self.mySeed then 
@@ -356,17 +343,29 @@ function GridBox:setGrowingStatus()
 end
 
 function GridBox:getCapacityInfo()
-    if self.myType == "pasture" then
-        return {
-            current = self.animals,
-            max = self.pastureLimit,
-            available = self.pastureLimit - self.animals,
-            species = self.mySpecies
-        }
-    end
-    return nil
+	if self.myType ~= "pasture" then return nil end
+	
+	local total = 0
+    for _, n in pairs(self.animals) do total = total + n end
+
+    return {
+        current = total,
+        max     = self.pastureLimit,
+        available = self.pastureLimit - total
+    }
 end
 
+function GridBox:getDominantSpecies()
+    local max = 0
+    local dominant = nil
+    for sp, n in pairs(self.animals) do
+        if n > max then
+            max = n
+            dominant = sp
+        end
+    end
+    return dominant, max
+end
 
 
 -- ============================================
@@ -437,9 +436,11 @@ function GridBox:hideAllFences()
 end
 
 function GridBox:updateFenceVisuals()
+	--if not board.pendingFences or not board.pendingFences.boxes then return end
+	  
     for direction, hasFence in pairs(self.fenceData) do
         if hasFence then
-            local isTemporary = self.myPlayer.board:isBoxInPendingFences(self)
+            local isTemporary = self.myPlayer.board:isBoxInPendingFences(self,"updateFenceVisuals ")
             self:showFence(direction, isTemporary)
         else
             self:hideFence(direction)

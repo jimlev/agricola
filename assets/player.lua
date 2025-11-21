@@ -18,7 +18,7 @@ function Player:init(id, name, color, humanOrNot)
 	self.hasPlayedThisRound = false
     -- Ressources
     self.resources = {
-        wood = 7,
+        wood = 18,
         clay = 3,
         stone = 0,
 		reed = 0,
@@ -403,16 +403,19 @@ function Player:getReproSummary()
     if self.resources.sheep >= 2 then
         self:addResource("sheep", 1)
         table.insert(summaryParts, "1 mouton")
+		self.board:autoPlaceAnimals("sheep", 1)
     end
 
     if self.resources.pig >= 2 then
         self:addResource("pig", 1)
         table.insert(summaryParts, "1 cochon")
+		self.board:autoPlaceAnimals("pig",1)
     end
 
     if self.resources.cattle >= 2 then
         self:addResource("cattle", 1)
         table.insert(summaryParts, "1 bœuf")
+		self.board:autoPlaceAnimals("cattle",1)
     end
 
     if #summaryParts > 0 then

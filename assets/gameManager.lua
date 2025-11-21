@@ -130,6 +130,7 @@ function gameManager:exitState(state)
     elseif state == GAME_STATES.ACTION_PENDING then
 
     elseif state == GAME_STATES.TURN_END then
+		self.currentAction = nil
 		print("_____________________________________________________ fin de tour")
 		
 	 elseif state == GAME_STATES.ROUND_END then
@@ -328,7 +329,14 @@ function gameManager:executeAction()
 	
 	if self.currentAction == "cloture" then
 		snapshot.board:commitFences()
-    end
+    elseif self.currentAction == "sheep" then
+		--snapshot:addResource("sheep", 2)
+    elseif self.currentAction == "pig" then
+		snapshot:addResource("pig", 2)
+    elseif self.currentAction == "cattle" then
+		snapshot:addResource("cattle", 2)		
+	end
+	
 	
 	-- on surcharge le player par le snapshot...
 	self:commitSnapshot(player, snapshot)
@@ -439,6 +447,16 @@ function gameManager:cancelAction()
     local action = self.pendingAction
     local sign = self:getSignById(action.signId)
     
+	-- supprimer le bouton "validFenceBtn" -- cas speciaux des creations d'enclos
+    if self.ui.validFenceBtn then
+        self.ui:removeChild(self.ui.validFenceBtn)
+        self.ui.validFenceBtn = nil
+    end
+	-- supprimer le bouton "validAnimalPlaceBtn" -- repartition des animaux dans les enclos
+	if self.ui.validAnimalPlaceBtn then
+		self.ui:removeChild(self.ui.validAnimalPlaceBtn)
+		self.ui.validAnimalPlaceBtn = nil
+	end
     -- rollback sur le sign
     sign:cancelAction()
 	self.bakingTime = false
@@ -446,7 +464,6 @@ function gameManager:cancelAction()
     -- rollback du meeple
     action.meeple:returnHome()
 
-    -- cacher le board du joueur si affiché (???? c fait où ??)
     local player = action.player
 	local snapshot = player.snapshot
 	
@@ -457,7 +474,7 @@ function gameManager:cancelAction()
 --    end
 
 	self.inBuyCardMode = false -- les cartes ne sont plus achetables
-	-- et je confirme l'achat de celle sélectionnée
+	-- et je rétablis celle sélectionnée
 	if self.currentZoomedCard ~= nil then 
 		self:cleanMajorCardsMarket() 
 	end
@@ -478,6 +495,7 @@ function gameManager:cancelAction()
     if self.nextFirstPlayer == player then self.nextFirstPlayer = nil end
     -- fermer la popup
     self.ui:killConfirmPopup()
+
 	
 	-- on kill le snapshot corrompu
     self:killSnapshot(player)
@@ -742,13 +760,14 @@ end
 -- Fonctions 'metiers' des differentes actions 
 
 function gameManager:beginFenceAddition(player) -- "cloture"
+--[[
 	gameManager.pendingFences = {
 		boxes = {},              -- Liste des cases en cours de clôture
 		enclosureIds = {},       -- IDs des enclos temporaires créés ce tour
 		woodCost = 0,            -- Coût total en bois
 		turnCreated = nil        -- Tour de création (pour validation)
 	}
-	
+]]--	
 	player.board:startFenceCreation()
     player.board:setVisible(true)
 	player.board.isPlayable = true 
@@ -793,8 +812,10 @@ function gameManager:beginAddSheep(player)   -- "mouton"
     player.board:setVisible(true)
 	player.board.isPlayable = true
 
-	local placed, leftover = player.board:autoPlaceAnimals("sheep", self.pendingAction.sign.stock)
-
+	player:addResource("sheep", self.pendingAction.sign.stock)
+	player.board:autoPlaceAnimals("sheep",self.pendingAction.sign.stock)
+	self.ui:validAnimalRepartition(player)
+	
   --  player.board:findBestEnclosure("sheep", self.pendingAction.sign.stock)
 --	local sheepCount = self.pendingAction.sign.stock
 --	local boxe = player.board.boxes[3] 
@@ -859,7 +880,7 @@ function gameManager:handleBoxClick(box)
     -- 2. Vérifier le type d’action
     if self.currentAction == "cloture" then
         -- Vérifier si la case est déjà dans les clôtures en cours
-        if snapshot.board:isBoxInPendingFences(box) then
+        if snapshot.board:isBoxInPendingFences(box, "gameManager lors du handleClicBox") then
             -- Retirer la case
             snapshot.board:removeBoxFromFence(box)
             
@@ -868,12 +889,12 @@ function gameManager:handleBoxClick(box)
             valid = snapshot.board:addBoxToFence(box)
             
             -- Afficher validation si c'est le 1er clic
-            if not self.ui.bouton then
+            if not self.ui.validFenceBtn then
 				self.ui:validFenceTransaction(snapshot)
             end
         end
 		
-		self.ui.bouton:updateButtonState(snapshot.board:getPendingFenceCost())
+		self.ui.validFenceBtn:updateButtonState(snapshot.board:getPendingFenceCost())
         return  -- Pas besoin de gérer le counter pour les clôtures
 			
 	elseif self.currentAction == "labourer" and box.myType == "empty" then
@@ -886,14 +907,14 @@ function gameManager:handleBoxClick(box)
 			valid = true
 		end
 		
-	elseif self.currentAction == "construire" and box.state == "friche" then
+	elseif self.currentAction == "construire"  and box.myType == "empty" then
 		if box:convertToHouse(snapshot.house.rscType) then
 			snapshot:payResources(cost)
 			snapshot.house.rooms = snapshot.house.rooms + 1
 			valid = true
 		end		
 
-    elseif self.currentAction == "etable" and box.state == "friche" or box.state == "elevage" then
+    elseif self.currentAction == "etable" and box.state == "friche" or box.myType == "pasture" then
 		if box:buildStable() then
 			if cost then
 				snapshot:payResources(cost)
@@ -1290,22 +1311,21 @@ function gameManager:createPlayerSnapshot(player)
 			snapshotGridBox.enclosureId = playerGridBox.enclosureId 
 				
 			snapshotGridBox:updateVisual()
-			snapshotGridBox:updateFenceVisuals()
         end
     end
 	
-	snapshot.board.enclosures = table.clone(originalPlayer.board.enclosures, nil, true)
+--	snapshot.board.enclosures = table.clone(originalPlayer.board.enclosures, nil, true)
 	snapshot.board.nextEnclosureId = originalPlayer.board.nextEnclosureId
-
+	snapshot.board:refreshAllFenceVisuals()
 	-- Et re-mapper les boxes clonées
-	for _, enclosure in pairs(snapshot.board.enclosures) do
-		local newBoxList = {}
-		for _, origBox in ipairs(enclosure.boxes) do
-			local snapBox = snapshot.board.boxes[origBox.row][origBox.col]
-			table.insert(newBoxList, snapBox)
-		end
-		enclosure.boxes = newBoxList
-	end
+--	for _, enclosure in pairs(snapshot.board.enclosures) do
+--		local newBoxList = {}
+--		for _, origBox in ipairs(enclosure.boxes) do
+--			local snapBox = snapshot.board.boxes[origBox.row][origBox.col]
+--			table.insert(newBoxList, snapBox)
+--		end
+--		enclosure.boxes = newBoxList
+--	end
 
 	for i = 2, #originalPlayer.converters do -- je ne prends pas l'index 1 qui est spawn a la créa du joueur
 		local converter = RscConverter.new(snapshot, originalPlayer.converters[i].mi, 0)
@@ -1391,14 +1411,14 @@ function gameManager:commitSnapshot(player, clone)
 				originalGridBox.enclosureId = cloneGridBox.enclosureId 
 				
 				originalGridBox:updateVisual()
-				originalGridBox:updateFenceVisuals()
             end
         end
     end
 
-	originalPlayer.board.enclosures = table.clone(clone.board.enclosures, nil, true)
+--	originalPlayer.board.enclosures = table.clone(clone.board.enclosures, nil, true)
 	originalPlayer.board.nextEnclosureId = clone.board.nextEnclosureId
-
+	originalPlayer.board:refreshAllFenceVisuals()
+--[[
 	-- Après avoir copié enclosures
 	for enclosureId, enclosure in pairs(originalPlayer.board.enclosures) do
 		local newBoxList = {}
@@ -1409,7 +1429,7 @@ function gameManager:commitSnapshot(player, clone)
 		end
 		enclosure.boxes = newBoxList
 	end
-
+]]--
 --	print("--------------------------------  < < < 🧑‍🤝‍🧑 Player rétabli")
     return true
 end

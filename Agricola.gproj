@@ -183,6 +183,7 @@
             <file name="assets/gfx/fences/verticalFence.png"/>
         </folder>
         <folder name="UI">
+            <file name="assets/gfx/UI/animalsBtn.png"/>
             <file name="assets/gfx/UI/beggingBtn.png"/>
             <file name="assets/gfx/UI/blueInv_focus.png"/>
             <file name="assets/gfx/UI/blueP_Token.png"/>
@@ -196,7 +197,7 @@
             <file name="assets/gfx/UI/cancelBtn.png"/>
             <file name="assets/gfx/UI/continueBtn.png"/>
             <file name="assets/gfx/UI/eatfoodBtn.png"/>
-            <file name="assets/gfx/UI/fenceWoodBtn.png"/>
+            <file name="assets/gfx/UI/fencewoodBtn.png"/>
             <file name="assets/gfx/UI/focusP_Token.png"/>
             <file name="assets/gfx/UI/greenInv_focus.png"/>
             <file name="assets/gfx/UI/greenP_Token.png"/>
