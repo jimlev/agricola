@@ -131,8 +131,6 @@ function gameManager:exitState(state)
 
     elseif state == GAME_STATES.TURN_END then
 		self.currentAction = nil
-		print("_____________________________________________________ fin de tour")
-		
 	 elseif state == GAME_STATES.ROUND_END then
 		print("===================================================== fin de round")	
     end
@@ -496,7 +494,6 @@ function gameManager:cancelAction()
     -- fermer la popup
     self.ui:killConfirmPopup()
 
-	
 	-- on kill le snapshot corrompu
     self:killSnapshot(player)
 	
@@ -880,7 +877,7 @@ function gameManager:handleBoxClick(box)
     -- 2. Vérifier le type d’action
     if self.currentAction == "cloture" then
         -- Vérifier si la case est déjà dans les clôtures en cours
-        if snapshot.board:isBoxInPendingFences(box, "gameManager lors du handleClicBox") then
+        if snapshot.board:isBoxInPendingFences(box) then
             -- Retirer la case
             snapshot.board:removeBoxFromFence(box)
             
@@ -1129,7 +1126,6 @@ end
 
 function gameManager:updateFamilySize()
 	for i, player in ipairs(self.playerList) do
-		print("Check familyBirth", player.name, player.familyBirth)
 		if player.familyBirth ~= 0 then
 			print(player.name,"fête un heureux événement !")
 			player.familySize = player.familySize + player.familyBirth
@@ -1300,7 +1296,8 @@ function gameManager:createPlayerSnapshot(player)
 			snapshotGridBox.mySeed = playerGridBox.mySeed  
 			snapshotGridBox.mySeedAmount = playerGridBox.mySeedAmount
 			snapshotGridBox.mySpecies = playerGridBox.mySpecies
-			snapshotGridBox.animals = playerGridBox.animals
+			snapshotGridBox.animals = table.clone(playerGridBox.animals, nil, true)
+
 			snapshotGridBox.pastureLimit = playerGridBox.pastureLimit
 			snapshotGridBox.hasStable = playerGridBox.hasStable
 			snapshotGridBox.inGrowingPhase = playerGridBox.inGrowingPhase 
@@ -1400,7 +1397,7 @@ function gameManager:commitSnapshot(player, clone)
 				originalGridBox.mySeed = cloneGridBox.mySeed 
 				originalGridBox.mySeedAmount = cloneGridBox.mySeedAmount
 				originalGridBox.mySpecies = cloneGridBox.mySpecies
-				originalGridBox.animals = cloneGridBox.animals
+				originalGridBox.animals = table.clone(cloneGridBox.animals, nil, true)
 				originalGridBox.pastureLimit = cloneGridBox.pastureLimit
 				originalGridBox.hasStable = cloneGridBox.hasStable
 				originalGridBox.inGrowingPhase = cloneGridBox.inGrowingPhase 

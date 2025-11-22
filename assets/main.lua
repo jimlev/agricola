@@ -12,7 +12,7 @@ print("======================     NEW GAME     =============================")
 print("=====================================================================")
 print("=====================================================================")
 print("")
-print("🚨 À GERER :  ")
+print("🚨 À GERER : les animaux cuits restent dans les enclos  ")
 print("🚨 EN COURS :")
 print("🚨 À GERER :  Gérer la problematique de bouffe post Naissance")
 
@@ -42,7 +42,7 @@ function startGame()
 		end
 		
 		   -- NOUVEAU : Test enclos
-		if e.keyCode == KeyCode.E then
+		if e.keyCode == KeyCode.E then  -- touche E pour Debug enclos
 			local p = gameManager:getActivePlayer()
 			if p.board then
 				p.board:debugEnclosures()

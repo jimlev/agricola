@@ -304,7 +304,6 @@ end
 -- ########################## HELPERS CONVERTER
 
 function Player:updateConverterBtn()
-print("Appel a updateConverterBtn", math.random(99999))
 	for i = 1, #self.converters do
 		self.converters[i]:updateButtons()
 	end
@@ -457,7 +456,7 @@ function Player:printFarmInfo()
                 end
                 if box.inGrowingPhase then table.insert(extra, "🌱 croissance") end
                 if box.hasStable then table.insert(extra, "🎠 étable") end
-                if box.enclosureId then table.insert(extra, "enclos #" .. box.enclosureId) end
+                if box.enclosureId then table.insert(extra, "enclos #" .. box.enclosureId.."  [ 🐑: "..box.animals.sheep.." | 🐖: "..box.animals.pig.." | 🐄: "..box.animals.cattle.."]") end
 
                 if box.state and box.state ~= "normal" then
                     table.insert(extra, "état: " .. tostring(box.state))

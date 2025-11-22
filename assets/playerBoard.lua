@@ -439,11 +439,7 @@ function PlayerBoard:hasPendingFences()
     return #self.pendingFences.boxes > 0
 end
 
-function PlayerBoard:isBoxInPendingFences(box,sourceCall)
-	print("=========================== = = = = = = > > > > > >  >  >  >   >    >      >     fonction qui m'appelle :",sourceCall or nil ,#box,box.myType)
---	if not self.pendingFences or not self.pendingFences.boxes then
---        return false
---  end
+function PlayerBoard:isBoxInPendingFences(box)
 	
     for _, pendingBox in ipairs(self.pendingFences.boxes) do
         if pendingBox == box then
@@ -458,7 +454,7 @@ function PlayerBoard:getAdjacentPendingBoxes(box)
     
     -- Vérifier chaque direction dans adjacentBox
     for direction, adjBox in pairs(box.adjacentBox) do
-        if adjBox and self:isBoxInPendingFences(adjBox,"getAdjacentPendingBoxes ") then
+        if adjBox and self:isBoxInPendingFences(adjBox) then
             table.insert(adjacent, {
                 box = adjBox,
                 direction = direction
@@ -478,7 +474,6 @@ function PlayerBoard:getOppositeDirection(direction)
     }
     return opposites[direction]
 end
--- ... toutes les méthodes de création de clôtures ...
 
 function PlayerBoard:commitFences()
     if #self.pendingFences.boxes == 0 then
@@ -488,8 +483,6 @@ function PlayerBoard:commitFences()
     
     -- Séparer les cases en groupes connectés
     local groups = self:findConnectedGroups(self.pendingFences.boxes)
-    
-    print(string.format("🔍 %d groupe(s) d'enclos détecté(s)", #groups))
     
     -- Créer un enclos par groupe
     for i, group in ipairs(groups) do
@@ -504,7 +497,6 @@ function PlayerBoard:commitFences()
         
         -- Créer l'enclos
         local enclosureId = self:createEnclosure(group, gameManager.currentRound)
-        print(string.format("commitFences() dit: ✅ Enclos #%d créé avec %d cases", enclosureId, #group))
     end
     
     -- Nettoyer l'état temporaire
@@ -530,7 +522,9 @@ function PlayerBoard:createEnclosure(boxList, turn)
         box.enclosureId = enclosureId
         box:convertToPasture(0)  -- Le reste est géré par les fences
     end
-    
+	
+    -- Calculer et attribuer la capacité
+    self:updateEnclosureCapacity(enclosureId)  -- ← Ajoute cet appel
     print(string.format("createEnclosure() dit:✅ Enclos #%d créé avec %d cases", enclosureId, #boxList))
     
     return enclosureId
@@ -628,39 +622,14 @@ function PlayerBoard:collectConnectedBoxes(box, allBoxes, visited, group)
 end
 
 
-
-
-function PlayerBoard:debugEnclosures()
-    print("\n=== ENCLOS De "..self.player.name.." ===")
-    local ids = self:getAllEnclosureIds()
+function PlayerBoard:updateEnclosureCapacity(enclosureId)
+    local info = self:getEnclosureInfo(enclosureId)
+    if not info then return end
     
-    if #ids == 0 then
-        print("Aucun enclos")
+    -- Mettre à jour toutes les cases de l'enclos
+    for _, box in ipairs(info.boxes) do
+        box.pastureLimit = info.capacity
     end
-    
-    for _, id in ipairs(ids) do
-        local info = self:getEnclosureInfo(id)
-        
-		local stableCount = 0
-        local animalStr = "vide"
-        if info.totalCount > 0 then
-            local parts = {}
-            for species, count in pairs(info.animals) do
-                if count > 0 then
-                    table.insert(parts, string.format("%d %s", count, species))
-                end
-            end
-            animalStr = table.concat(parts, ", ")
-        end
-		for _, box in ipairs(info.boxes) do
-			if box.hasStable then
-				stableCount = stableCount+1
-			end
-		end
-        print(string.format("• Enclos #%d : %d cases | capacité= %d | animaux= %s   | stable : %d ",
-            id, #info.boxes, info.capacity, animalStr,stableCount))
-    end
-    print("===============\n")
 end
 
 function PlayerBoard:getAllEnclosureIds()
@@ -680,35 +649,71 @@ function PlayerBoard:getAllEnclosureIds()
     return ids
 end
 
+-- dispatching des animaux d'un enclos au sein des box qui le composent
+function PlayerBoard:redistributeAnimalsInEnclosure(enclosureId)
+    local info = self:getEnclosureInfo(enclosureId)
+    if not info or info.totalCount == 0 then return end
+    
+    print("→ Redistribution enclos #" .. enclosureId)
+    
+    -- 1) Collecter tous les animaux de l'enclos
+    local allAnimals = {}
+    for species, count in pairs(info.animals) do
+        for i = 1, count do
+            table.insert(allAnimals, species)
+        end
+    end
+    
+    -- 2) Vider toutes les boxes de l'enclos
+    for _, box in ipairs(info.boxes) do
+        for species, count in pairs(box.animals) do
+            box.animals[species] = 0
+        end
+    end
+    
+    -- 3) Répartir équitablement en cycle
+    local boxIndex = 1
+    for i, species in ipairs(allAnimals) do
+        local box = info.boxes[boxIndex]
+        box.animals[species] = (box.animals[species] or 0) + 1
+        
+        -- Passer à la box suivante (cycle)
+        boxIndex = boxIndex + 1
+        if boxIndex > #info.boxes then
+            boxIndex = 1
+        end
+    end
+    
+    print("✅ " .. #allAnimals .. " animaux répartis sur " .. #info.boxes .. " boxes")
+	for _, box in ipairs(info.boxes) do
+        -- Déterminer l'espèce dominante de cette box
+        local dominantSpecies = box:getDominantSpecies()
+        box.state = dominantSpecies  -- "sheep", "pig", "cattle" ou "pasture" si vide
+        box:updateVisual()
+    end
+end
 --[[
 ========================================================================================
 =======================  LES PATURAGES === LES ANIMAUX  ================================
 ========================================================================================
-
-
-
-function PlayerBoard:searchValidEnclosure(species, quantity)
-	for i = 1, self.nextEnclosureId - 1 do	
-		self:addAnimalsToEnclosure(i, species, quantity)
-	end	
-end
 ]]--
-function PlayerBoard:clearEnclosure(enclosureId)
-    local info = self:getEnclosureInfo(enclosureId)
-    if info then
-        -- Réinitialiser tous les animaux de cet enclos
-        for species, count in pairs(info.animals) do
-            info.animals[species] = 0
-        end
-        info.totalCount = 0
-        info.dominantSpecies = nil
-        
-        -- Mettre à jour l'affichage si nécessaire
-		for _, box in ipairs(info.boxes) do
-			box:updateVisual()
-		end
-			
-        print("→ Enclos #" .. enclosureId .. " vidé")
+function PlayerBoard:_addToEnclosure(enclosureInfo, species, count)
+	  print("_addToEnclosure appelé sur board de:", self.player.name)
+    -- Placer les animaux dans la première case (dispatch après)
+    local firstBox = enclosureInfo.boxes[1]
+    firstBox.animals[species] = (firstBox.animals[species] or 0) + count
+    firstBox.mySpecies = species
+    
+    -- Redistribuer sur toutes les cases
+    self:redistributeAnimalsInEnclosure(enclosureInfo.id)
+end
+
+function PlayerBoard:_clearEnclosure(enclosureInfo)
+    for _, box in ipairs(enclosureInfo.boxes) do
+        box.animals = {sheep = 0, pig = 0, cattle = 0}
+        box.mySpecies = nil
+        box.state = "pasture"
+        box:updateVisual()
     end
 end
 
@@ -743,121 +748,126 @@ function PlayerBoard:addAnimalsToEnclosure(enclosureId, species, count)
     return true
 end
 
+
 function PlayerBoard:autoPlaceAnimals(species, quantity)
     print("\n=== autoPlaceAnimals ===")
     print("Species =", species, "| Quantity =", quantity)
 
-    local remaining = quantity
+    if quantity <= 0 then return 0 end
 
-    ---------------------------------------------
-    -- 1) CHERCHER UN ENCLOS CONTENANT LA MÊME ESPÈCE
-    ---------------------------------------------
-    local sameSpeciesEnclosure = nil
-
-    for id = 0, self.nextEnclosureId - 1 do
-        local info = self:getEnclosureInfo(id)
-
-        if info and info.totalCount > 0 and info.dominantSpecies == species then
-            sameSpeciesEnclosure = info
-            break
+    -----------------------------------------------------
+    -- PHASE A : Enclos contenant déjà la même espèce
+    -----------------------------------------------------
+    local processedIds = {}
+    
+    while quantity > 0 do
+        local sameSpeciesEnclosure = nil
+        
+        for id = 1, self.nextEnclosureId - 1 do
+            if not processedIds[id] then
+                local info = self:getEnclosureInfo(id)
+                if info and info.totalCount > 0 and info.dominantSpecies == species then
+                    sameSpeciesEnclosure = info
+                    break
+                end
+            end
         end
-    end
 
-    if sameSpeciesEnclosure then
+        if not sameSpeciesEnclosure then
+            break  -- Plus d'enclos de même espèce → Phase B
+        end
+
         local freeSpace = sameSpeciesEnclosure.capacity - sameSpeciesEnclosure.totalCount
-
-        if freeSpace > remaining then
-            -- Tout rentre
-            self:addAnimalsToEnclosure(sameSpeciesEnclosure.id, species, remaining)
-            print("→ Remplissage enclos existant #" .. sameSpeciesEnclosure.id .. " +" .. remaining)
+        
+        if freeSpace > quantity then  -- > pour laisser place naissance
+            self:_addToEnclosure(sameSpeciesEnclosure, species, quantity)
+            print("→ Phase A : Remplissage enclos #" .. sameSpeciesEnclosure.id .. " +" .. quantity)
             return 0
         else
-            -- Pas assez de place → on vide cet enclos
-            print("⚠️ Pas assez de place dans enclos #" .. sameSpeciesEnclosure.id .. ". Réorganisation…")
-
-            remaining = remaining + sameSpeciesEnclosure.totalCount
-            -- On vide l'enclos : toutes les boxes remettent animal = 0
-            for _, box in ipairs(sameSpeciesEnclosure.boxes) do
-                box.animals[sameSpeciesEnclosure.dominantSpecies] = 0
-                box.state = nil
-                box:updateVisual()
-            end
-
-            -- Restart fresh : plus d'enclos contenant l'espèce
-            sameSpeciesEnclosure = nil
+            -- Trop petit → vider et récupérer
+            print("⚠️ Phase A : Enclos #" .. sameSpeciesEnclosure.id .. " trop petit, vidage...")
+            quantity = quantity + sameSpeciesEnclosure.totalCount
+            self:_clearEnclosure(sameSpeciesEnclosure)
+           -- processedIds[sameSpeciesEnclosure.id] = true
         end
     end
 
-    ---------------------------------------------------------
-    -- 2) CHERCHER DES ENCLOS VIDES ET CALCULER maxFreeSizeEnclosure
-    ---------------------------------------------------------
-    local maxFreeSizeEnclosure = nil
-    local maxSize = 0
+	-----------------------------------------------------
+	-- PHASE B : Enclos vide pouvant contenir TOUT + 1
+	-----------------------------------------------------
+	local maxFreeSizeEnclosure = nil
+	local maxFreeSize = 0
 
-    for id = 0, self.nextEnclosureId - 1 do
-        local info = self:getEnclosureInfo(id)
+	for id = 1, self.nextEnclosureId - 1 do
+		local info = self:getEnclosureInfo(id)
+		
+		-- Éliminer si pas vide
+		if info and info.totalCount == 0 then
+			local cap = info.capacity
+			
+			-- Mémoriser le plus grand
+			if cap > maxFreeSize then
+				maxFreeSize = cap
+				maxFreeSizeEnclosure = id
+			end
+			
+			-- Assez grand pour TOUT + 1 (naissance) ?
+			if cap > quantity then
+				self:_addToEnclosure(info, species, quantity)
+				print("→ Phase B : Tout dans enclos #" .. id .. " +" .. quantity)
+				return 0
+			end
+		end
+	end
+	
+	-----------------------------------------------------
+	-- PHASE C : Répartition du plus grand au plus petit
+	-----------------------------------------------------
+	-- 1) Remplir maxFreeSizeEnclosure d'abord
+	if maxFreeSizeEnclosure then
+		local info = self:getEnclosureInfo(maxFreeSizeEnclosure)
+		local toPlace = math.min(quantity, maxFreeSize)
+		self:_addToEnclosure(info, species, toPlace)
+		print("→ Phase C : Remplissage enclos #" .. maxFreeSizeEnclosure .. " +" .. toPlace)
+		quantity = quantity - toPlace
+	end
 
-        if info and info.totalCount == 0 then
-            local cap = info.capacity
+	-- 2) Tester le remaining
+	while quantity > 0 do
+		-- Si reste 1 → maison
+		if quantity == 1 then
+			local house = self:getEnclosureInfo(0)
+			if house and house.totalCount == 0 and house.capacity >= 1 then
+				self:_addToEnclosure(house, species, 1)
+				print("→ Phase C : Dernier animal dans maison")
+				return 0
+			else
+				break  -- Maison pleine ou inexistante
+			end
+		end
+		
+		-- Si remaining > 1 → chercher un enclos vide qui peut tout contenir
+		local foundEnclosure = false
+		for id = 1, self.nextEnclosureId - 1 do
+			if id ~= maxFreeSizeEnclosure then  -- Éviter celui déjà rempli
+				local info = self:getEnclosureInfo(id)
+				if info and info.totalCount == 0 and info.capacity >= quantity then
+					self:_addToEnclosure(info, species, quantity)
+					print("→ Phase C : Remplissage enclos #" .. id .. " +" .. quantity)
+					quantity = 0
+					foundEnclosure = true
+					break
+				end
+			end
+		end
+		
+		if not foundEnclosure then
+			break  -- Plus d'options
+		end
+	end
 
-            if cap >= remaining then
-                -- Un enclos vide peut TOUT contenir → meilleur cas
-                self:addAnimalsToEnclosure(id, species, remaining)
-                print("→ Remplissage enclos vide #" .. id .. " +" .. remaining)
-                return 0
-            end
-
-            -- Trop petit → garder en mémoire le plus grand
-            if cap > maxSize then
-                maxSize = cap
-                maxFreeSizeEnclosure = info
-            end
-        end
-    end
-
-    ---------------------------------------------------------
-    -- 3) AUCUNE PLACE PARFAITE → UTILISER maxFreeSizeEnclosure
-    ---------------------------------------------------------
-    if maxFreeSizeEnclosure then
-        local id = maxFreeSizeEnclosure.id
-        local cap = maxFreeSizeEnclosure.capacity
-
-        self:addAnimalsToEnclosure(id, species, cap)
-        print("→ Remplissage partiel enclos #" .. id .. " +" .. cap)
-
-        remaining = remaining - cap
-
-        if remaining == 0 then
-            return 0
-        end
-
-        -----------------------------------------------------
-        -- Si il reste 1 animal → essayer l’enclos #0 par défaut
-        -----------------------------------------------------
-        if remaining == 1 then
-            local house = self:getEnclosureInfo(1)
-            if house and house.totalCount == 0 and house.capacity >= 1 then
-                self:addAnimalsToEnclosure(1, species, 1)
-                print("→ Dernier animal placé dans enclos #1")
-                return 0
-            end
-
-            print("⚠️ Un animal reste sans place")
-            return remaining
-        end
-
-        -----------------------------------------------------
-        -- Il reste plus qu'un animal → retour naturel à D :
-        -- On relance autoPlaceAnimals() pour gérer le reste.
-        -----------------------------------------------------
-        return self:autoPlaceAnimals(species, remaining)
-    end
-
-    ---------------------------------------------------------
-    -- 4) Aucun enclos disponible → overload total
-    ---------------------------------------------------------
-    print("⚠️ Aucun enclos ne peut accueillir les animaux → overload =", remaining)
-    return remaining
+	print("⚠️ Animaux non placés :", quantity)
+	return quantity
 end
 
 
@@ -896,4 +906,59 @@ function PlayerBoard:centerOnX(targetX)
 		{1, frames, self, {x = {currentX, targetBoardX, "inOutQuadratic"}}}
 	}
 	mc:play()
+end
+
+-- ================================================================================
+-- ================================================================================
+-- ============================       DEBUG        ================================
+-- ================================================================================
+
+function PlayerBoard:debugEnclosures()
+    print("\n=== ENCLOS De "..self.player.name.." ===")
+    local ids = self:getAllEnclosureIds()
+    
+    if #ids == 0 then
+        print("Aucun enclos")
+    end
+    
+    for _, id in ipairs(ids) do
+        local info = self:getEnclosureInfo(id)
+        
+        local stableCount = 0
+        local animalStr = "vide"
+        if info.totalCount > 0 then
+            local parts = {}
+            for species, count in pairs(info.animals) do
+                if count > 0 then
+                    table.insert(parts, string.format("%d %s", count, species))
+                end
+            end
+            animalStr = table.concat(parts, ", ")
+        end
+        
+        -- Debug des boxes individuelles
+        local boxDetails = {}
+        for i, box in ipairs(info.boxes) do
+            local boxAnimals = {}
+            for species, count in pairs(box.animals or {}) do
+                if count > 0 then
+                    table.insert(boxAnimals, string.format("%s:%d", species, count))
+                end
+            end
+            local boxAnimalStr = #boxAnimals > 0 and table.concat(boxAnimals, ",") or "vide"
+            local stableMark = box.hasStable and " [STABLE]" or ""
+            table.insert(boxDetails, string.format("Box%d:%s%s", i, boxAnimalStr, stableMark))
+            
+            if box.hasStable then
+                stableCount = stableCount + 1
+            end
+        end
+        
+        local boxesDetailStr = table.concat(boxDetails, " | ")
+        
+        print(string.format("• Enclos #%d : %d cases | capacité= %d | animaux= %s | stables: %d",
+            id, #info.boxes, info.capacity, animalStr, stableCount))
+        print(string.format("  ↳ Répartition: %s", boxesDetailStr))
+    end
+    print("===============\n")
 end

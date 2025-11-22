@@ -5,7 +5,7 @@ local numberFont = TTFont.new("fonts/K2D-Bold.ttf",28)
 GridBox = Core.class(Sprite)
 
 function GridBox:init(col, row, player)
-	local backImg = Bitmap.new(Texture.new("gfx/playerboard/bgherbe_box2.png"))
+	local backImg = Bitmap.new(Texture.new("gfx/playerboard/bgherbe_box.png"))
 	self:addChild(backImg)
 	self.backImg = backImg
 	
@@ -31,7 +31,7 @@ function GridBox:init(col, row, player)
         ble      = Bitmap.new(Texture.new("gfx/playerboard/ble_box.png")),
         legume   = Bitmap.new(Texture.new("gfx/playerboard/legume_box.png")),
 		pasture  = Bitmap.new(Texture.new("gfx/playerboard/paturage_box.png")),
-        m_wood   = Bitmap.new(Texture.new("gfx/positron.png")),
+        m_wood   = Bitmap.new(Texture.new("gfx/playerboard/woodhouse_box.png")),
         m_clay    = Bitmap.new(Texture.new("gfx/playerboard/clayhouse_box.png")),
         m_stone   = Bitmap.new(Texture.new("gfx/playerboard/stonehouse_box.png"))
     }
@@ -71,7 +71,7 @@ function GridBox:init(col, row, player)
     -- badge (comme pour les Sign)
     local badge = Bitmap.new(Texture.new("gfx/playerboard/harvestCount_box.png"))
 		badge:setAnchorPoint(0.5,0.5)
-		badge:setPosition(232, 166) -- ajuste selon ton sprite
+		badge:setPosition(224, 166) -- ajuste selon ton sprite
 		self:addChild(badge)
 		self.badge = badge
 
@@ -168,7 +168,8 @@ function GridBox:getLogicalState()
 		--self.state = "m_"..self.myPlayer.house.rscType
         return self.state
     elseif self.myType == "pasture" then
-		self.state = self:getDominantSpecies()
+		local dominantSpecies, count = self:getDominantSpecies()
+		self.state = dominantSpecies or "pasture"  -- Fallback si vide
 		return self.state
 	else
         return self.state or "friche"
@@ -189,8 +190,10 @@ function GridBox:updateVisual()
     if s == "ble" or s == "legume" then
         self.badgeCount:setText(self.mySeedAmount)
         self.badge:setVisible(true)
+		
     elseif s == "sheep" or s == "pig" or s == "cattle"  then
-        self.badgeCount:setText(#self.animals.."/"..self.pastureLimit)
+		local totalAnimals = (self.animals.sheep or 0) + (self.animals.pig or 0) + (self.animals.cattle or 0)
+		self.badgeCount:setText(totalAnimals.."/"..self.pastureLimit)
 		self.badge:setPosition(214, 140)
         self.badge:setVisible(true)
 			
@@ -198,25 +201,11 @@ function GridBox:updateVisual()
 		self[spriteName]:setVisible(true)
     else
         self.badge:setVisible(false)
+		self.sheepSprite:setVisible(false)
+		self.pigSprite:setVisible(false)
+		self.cattleSprite:setVisible(false)
     end
 end
-
-
--- Helpers pour la gestion des champs
-function GridBox:harvest()
-    if self.myType ~= "field" or not self.mySeed then return 0 end
-
-    local production = 1
-    local seedType = self.mySeed
-    self.mySeedAmount = self.mySeedAmount - 1
-	if self.mySeedAmount == 0 then   
-		self.mySeed = nil 
-	end
-		
-    self:updateVisual()
-    return seedType, production
-end
-
 
 -- *$*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$
 -- *$*$*$*$*$*$*$ Helpers pour la conversion de type
@@ -296,8 +285,6 @@ print("convertToPasture: ",self.row, self.col,self.myType)
         self.mySpecies = nil
 		self.animals = {sheep = 0, pig = 0, cattle = 0}  -- Animaux dans cette case
         self.pastureLimit = capacity or 1  -- capacité de base
-		--self.hasStable = false
-			print("convertToPasture | self.myType == empty > myType: ",self.myType)	
         self:updateVisual()
         return true
     end
@@ -356,6 +343,7 @@ function GridBox:getCapacityInfo()
 end
 
 function GridBox:getDominantSpecies()
+	print("On me demande ma dominantSpecies alors que j'appartiens au joueur", self.myPlayer.name)
     local max = 0
     local dominant = nil
     for sp, n in pairs(self.animals) do
@@ -440,10 +428,27 @@ function GridBox:updateFenceVisuals()
 	  
     for direction, hasFence in pairs(self.fenceData) do
         if hasFence then
-            local isTemporary = self.myPlayer.board:isBoxInPendingFences(self,"updateFenceVisuals ")
+            local isTemporary = self.myPlayer.board:isBoxInPendingFences(self)
             self:showFence(direction, isTemporary)
         else
             self:hideFence(direction)
         end
     end
+end
+
+
+-- **************  Helpers pour la gestion des champs durant le HARVEST 
+-- ********************************
+function GridBox:harvest()
+    if self.myType ~= "field" or not self.mySeed then return 0 end
+
+    local production = 1
+    local seedType = self.mySeed
+    self.mySeedAmount = self.mySeedAmount - 1
+	if self.mySeedAmount == 0 then   
+		self.mySeed = nil 
+	end
+		
+    self:updateVisual()
+    return seedType, production
 end
