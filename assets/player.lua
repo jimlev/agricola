@@ -18,7 +18,7 @@ function Player:init(id, name, color, humanOrNot)
 	self.hasPlayedThisRound = false
     -- Ressources
     self.resources = {
-        wood = 0,
+        wood = 18,
         clay = 3,
         stone = 0,
 		reed = 0,
@@ -57,6 +57,7 @@ function Player:addResource(resource, amount)
     if counter and counter.hilite then	
 		counter.hilite:gotoAndPlay(2) -- lance l’anim du highlight
     end
+	
 	self:updateInventory()
 end
 
@@ -102,8 +103,11 @@ function Player:canAfford(costs)
 end
 
 
-function Player:payResources(costs)
-    if not self:canAfford(costs) then return false end
+function Player:payResources(costs, allowNegative)
+    if not allowNegative and not self:canAfford(costs) then 
+        return false 
+    end
+	
 	if not costs or type(costs) ~= "table" then
         print("⚠️ ["..self.name.."] payResources appelé avec costs invalide:", costs)
         return false
@@ -127,6 +131,13 @@ function Player:payResources(costs)
         self.resources[actualResource] = self.resources[actualResource] - cost
 		local counter = self.inventoryCounters[actualResource]
 		counter.hilite:gotoAndPlay(2)
+		
+--		if self.resources[resource] < 0 then
+--            self.inventoryCounters[resource]:setTextColor(0xff0000)
+--        else
+--            self.inventoryCounters[resource]:setTextColor(0xffffff)
+--        end
+		
         print("💰 ["..self.name.."] paie "..cost.." "..actualResource.." (reste "..self.resources[actualResource]..")")
     end
 	self:updateInventory()
@@ -224,7 +235,6 @@ function Player:initInventory()
 		inventaire:addChild(counter)
 		
 		self.inventoryCounters[resourceName] = counter
-	--	if resourceName == 'food' then counter:setVisible(false) end -- le Grand compteur fait l'affichage
 		
 	local rscHilite = Bitmap.new(Texture.new("gfx/focus_inventaire.png"))
 	rscHilite:setAnchorPoint(0.5,.5)
@@ -257,7 +267,15 @@ function Player:updateInventory()
 				end
 			end
 		end
+		
 		counter:setText(tostring(self.resources[resourceName] or 0))
+		
+		if tonumber(self.resources[resourceName]) < 0 then
+            counter:setTextColor(0xff0000)
+        else
+            counter:setTextColor(0xffffff)
+        end
+		
     end
 end
 
@@ -286,7 +304,6 @@ end
 -- ########################## HELPERS CONVERTER
 
 function Player:updateConverterBtn()
-print("Appel a updateConverterBtn", math.random(99999))
 	for i = 1, #self.converters do
 		self.converters[i]:updateButtons()
 	end
@@ -385,16 +402,19 @@ function Player:getReproSummary()
     if self.resources.sheep >= 2 then
         self:addResource("sheep", 1)
         table.insert(summaryParts, "1 mouton")
+		self.board:autoPlaceAnimals("sheep", 1)
     end
 
     if self.resources.pig >= 2 then
         self:addResource("pig", 1)
         table.insert(summaryParts, "1 cochon")
+		self.board:autoPlaceAnimals("pig",1)
     end
 
     if self.resources.cattle >= 2 then
         self:addResource("cattle", 1)
         table.insert(summaryParts, "1 bœuf")
+		self.board:autoPlaceAnimals("cattle",1)
     end
 
     if #summaryParts > 0 then
@@ -407,6 +427,98 @@ end
 
 -- ============================== DEBUG +++++++++++++++++++++++
 function Player:printFarmInfo()
+    print("=== État de la ferme de " .. tostring(self.name or "Joueur inconnu") .. " ===")
+    
+    if not self.board or not self.board.boxes then
+        print("⚠️  Pas de plateau associé à ce joueur.")
+        return
+    end
+
+    local typeIcons = {
+        house = "🏠",
+        field = "🌾", 
+        empty = "⿻️",
+        pasture = "🐑"
+    }
+
+    -- === 1) LISTE DES CASES NON VIDES ===
+    for row = 1, #self.board.boxes do
+        for col = 1, #self.board.boxes[row] do
+            local box = self.board.boxes[row][col]
+            if box and box.myType and box.myType ~= "empty" then
+                local icon = typeIcons[box.myType] or "❓"
+
+                local extra = {}
+
+                if box.mySeed then table.insert(extra, "graine: " .. box.mySeed) end
+                if box.mySeedAmount and box.mySeedAmount > 0 then
+                    table.insert(extra, "quantité: " .. box.mySeedAmount)
+                end
+                if box.inGrowingPhase then table.insert(extra, "🌱 croissance") end
+                if box.hasStable then table.insert(extra, "🎠 étable") end
+                if box.enclosureId then table.insert(extra, "enclos #" .. box.enclosureId.."  [ 🐑: "..box.animals.sheep.." | 🐖: "..box.animals.pig.." | 🐄: "..box.animals.cattle.."]") end
+
+                if box.state and box.state ~= "normal" then
+                    table.insert(extra, "état: " .. tostring(box.state))
+                end
+
+                local line = string.format("%s Case [%d,%d] | type: %s",
+                    icon, col, row, box.myType)
+
+                if #extra > 0 then
+                    line = line .. " | " .. table.concat(extra, " | ")
+                end
+
+                print(line)
+            end
+        end
+    end
+
+    -- === 2) LISTE DES ENCLOS ===
+    print("\n=== ENCLOS ===")
+
+    local enclosures = self.board.enclosures or {}
+
+    if next(enclosures) == nil then
+        print("Aucun enclos.")
+    else
+        for id, enclosure in pairs(enclosures) do
+            local speciesList = {}
+            local totalAnimals = 0
+
+            for species, count in pairs(enclosure.animals or {}) do
+                if count > 0 then
+                    table.insert(speciesList, species .. "=" .. count)
+                    totalAnimals = totalAnimals + count
+                end
+            end
+
+            local animalsStr = (#speciesList > 0)
+                and table.concat(speciesList, ", ")
+                or "vide"
+
+            print(string.format(
+                "• Enclos #%d : %d cases | capacité=%d | animaux=%s",
+                id,
+                #enclosure.boxes,
+                enclosure.capacity or 0,
+                animalsStr
+            ))
+
+            -- Sous-liste des cases de l’enclos
+            local coords = {}
+            for _, box in ipairs(enclosure.boxes) do
+                table.insert(coords, string.format("[%d,%d]", box.col, box.row))
+            end
+            print("    Cases : " .. table.concat(coords, ", "))
+        end
+    end
+
+    print("=== Fin de l'état de la ferme ===\n")
+end
+
+
+function Player:old_printFarmInfo()
     print("=== État de la ferme de " .. tostring(self.name or "Joueur inconnu") .. " ===")
     if not self.board or not self.board.boxes then
         print("⚠️  Pas de plateau associé à ce joueur.")
@@ -468,33 +580,4 @@ function Player:printFarmInfo()
         end
     end
     print("=== Fin de l'état de la ferme ===")
-end
-			
-function Player:Old_printFarmInfo()
-    print("=== État de la ferme de " .. tostring(self.name or "Joueur inconnu") .. " ===")
-    if not self.board or not self.board.boxes then
-        print("⚠️  Pas de plateau associé à ce joueur.")
-        return
-    end
-
-    for row = 1, #self.board.boxes do
-        for col = 1, #self.board.boxes[row] do
-            local box = self.board.boxes[row][col]
-            if box then
-                local info = string.format(
-                    "Case [%d,%d] | type: %s | state: %s | seed: %s | seedAmount: %s | growing ? %s",
-                    col,
-                    row,
-                    tostring(box.myType or "nil"),
-                    tostring(box.myState or "nil"),
-                    tostring(box.mySeed),
-                    tostring(box.mySeedAmount),
-					tostring(box.inGrowingPhase)
-                )
-                print(info)
-            else
-                print(string.format("Case [%d,%d] est vide (nil)", col, row))
-            end
-        end
-    end
 end

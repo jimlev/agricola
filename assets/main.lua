@@ -12,7 +12,7 @@ print("======================     NEW GAME     =============================")
 print("=====================================================================")
 print("=====================================================================")
 print("")
-print("🚨 À GERER :  ")
+print("🚨 À GERER : les animaux cuits restent dans les enclos  ")
 print("🚨 EN COURS :")
 print("🚨 À GERER :  Gérer la problematique de bouffe post Naissance")
 
@@ -23,7 +23,7 @@ function startGame()
 		stage:addChild(UI)
 		stage.UI = UI
 		
-	gameManager:init(2)
+	gameManager:init(1)
 	
 	stage:addEventListener(Event.KEY_DOWN, function(e)
 		if e.keyCode == KeyCode.D then  -- touche D pour Debug
@@ -39,6 +39,14 @@ function startGame()
 		if e.keyCode == KeyCode.B then  -- touche B pour Debug
 			p:printFarmInfo()
 			--p:debugHouseState()
+		end
+		
+		   -- NOUVEAU : Test enclos
+		if e.keyCode == KeyCode.E then  -- touche E pour Debug enclos
+			local p = gameManager:getActivePlayer()
+			if p.board then
+				p.board:debugEnclosures()
+			end
 		end
 
 	end)

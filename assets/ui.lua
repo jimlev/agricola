@@ -226,6 +226,132 @@ function UI:queueInfo(title, text, duration, callback)
     self:processQueue()
 end
 
+function UI:validFenceTransaction(player)
+
+    local validFenceBtn = Bitmap.new(Texture.new("gfx/positron.png"))
+    validFenceBtn:setAnchorPoint(1, 0.5)
+    validFenceBtn:setPosition(gRight - 80, gBottom / 2)
+    self:addChild(validFenceBtn)
+    self.validFenceBtn = validFenceBtn
+
+    local numberFont = TTFont.new("fonts/K2D-Bold.ttf", 48)
+    local count = TextField.new(numberFont, wood)
+    count:setAnchorPoint(0, 0.5)
+    count:setTextColor(0xc70404)
+    count:setPosition(-360, 20)
+    validFenceBtn:addChild(count)
+    validFenceBtn.count = count
+
+    -- on stocke ici le listener pour pouvoir le retirer plus tard
+    validFenceBtn.onClick = function(event)
+        if validFenceBtn:hitTestPoint(event.x, event.y) then
+            event:stopPropagation()
+            local parent = validFenceBtn:getParent()
+            parent:removeChild(validFenceBtn)
+            parent.validFenceBtn = nil
+
+            gameManager:executeAction()
+        end
+    end
+
+    function validFenceBtn:updateButtonState(wood)
+        local woodNeeded = wood
+        local woodAvailable = player.resources.wood or 0
+
+        self:setTexture(Texture.new("gfx/UI/fenceWoodBtn.png"))
+        self.count:setText(woodNeeded)
+
+        if woodAvailable >= 0 then
+            self.count:setTextColor(0x533831)
+			self:setAlpha(1)
+            -- Ajouter le listener
+            self:addEventListener(Event.MOUSE_DOWN, self.onClick)
+
+        else
+            self.count:setTextColor(0xe70000)
+			self:setAlpha(.7)
+            -- 🔥 Retirer correctement
+            self:removeEventListener(Event.MOUSE_DOWN, self.onClick)
+        end
+    end
+
+    validFenceBtn:updateButtonState(0)
+end
+
+
+function UI:validAnimalRepartition(player)
+
+    local validAnimalPlaceBtn = Bitmap.new(Texture.new("gfx/positron.png"))
+    validAnimalPlaceBtn:setAnchorPoint(1, 0.5)
+    validAnimalPlaceBtn:setPosition(gRight - 80, gBottom / 2)
+    self:addChild(validAnimalPlaceBtn)
+    self.validAnimalPlaceBtn = validAnimalPlaceBtn
+
+    local numberFont = TTFont.new("fonts/K2D-Bold.ttf", 48)
+    local sheepcount = TextField.new(numberFont, 0)
+		sheepcount:setAnchorPoint(0, 0.5)
+		sheepcount:setTextColor(0xc70404)
+		sheepcount:setPosition(-440, 80)
+		validAnimalPlaceBtn:addChild(sheepcount)
+		validAnimalPlaceBtn.sheepcount = sheepcount
+	
+	local pigcount = TextField.new(numberFont, 0)
+		pigcount:setAnchorPoint(0, 0.5)
+		pigcount:setTextColor(0xc70404)
+		pigcount:setPosition(-330, 80)
+		validAnimalPlaceBtn:addChild(pigcount)
+		validAnimalPlaceBtn.pigcount = pigcount
+	
+	local cattlecount = TextField.new(numberFont, 0)
+		cattlecount:setAnchorPoint(0, 0.5)
+		cattlecount:setTextColor(0xc70404)
+		cattlecount:setPosition(-220, 80)
+		validAnimalPlaceBtn:addChild(cattlecount)
+		validAnimalPlaceBtn.cattlecount = cattlecount
+
+    -- on stocke ici le listener pour pouvoir le retirer plus tard
+    validAnimalPlaceBtn.onClick = function(event)
+        if validAnimalPlaceBtn:hitTestPoint(event.x, event.y) then
+            event:stopPropagation()
+            local parent = validAnimalPlaceBtn:getParent()
+            parent:removeChild(validAnimalPlaceBtn)
+            parent.validAnimalPlaceBtn = nil
+			
+            gameManager:executeAction()
+        end
+    end
+
+    function validAnimalPlaceBtn:updateButtonState()
+        local s, p, c = player.resources.sheep, player.resources.pig, player.resources.cattle
+
+        self:setTexture(Texture.new("gfx/UI/animalsBtn.png"))
+        self.sheepcount:setText(s)
+		self.pigcount:setText(p)
+		self.cattlecount:setText(c)
+		
+        if s >= 0 then
+            self.sheepcount:setTextColor(0x533831)
+        elseif s<0 then 
+            self.sheepcount:setTextColor(0xe70000)
+        end
+		if p >= 0 then
+            self.pigcount:setTextColor(0x533831)
+        elseif p <0 then 
+            self.pigcount:setTextColor(0xe70000)
+        end
+		if c >= 0 then
+            self.cattlecount:setTextColor(0x533831)
+        elseif c <0 then 
+            self.cattlecount:setTextColor(0xe70000)
+        end
+	
+		self:addEventListener(Event.MOUSE_DOWN, self.onClick)
+    end
+
+    validAnimalPlaceBtn:updateButtonState()
+end
+
+-- ======================= out of class
 function createOverlay()
 	local overlay = Shape.new()
 		overlay:setFillStyle(Shape.SOLID, 0x000000, .8)

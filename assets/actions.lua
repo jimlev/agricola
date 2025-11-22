@@ -69,7 +69,8 @@ local ACTIONS_DATA = {
           extraActionId = 25, -- cuisson comme extra
           comment = "Cuire du pain\n(nécessite un four)" },
 
-        { id = 13, title = "1 Mouton", icon = "gfx/signs/ic_mouton.png",
+        { id = 13, title = "Mouton", icon = "gfx/signs/ic_mouton.png",
+          special = "sheep",	
           resources = { { rscType="sheep", amount=1 } },
           accumulate = true, col = 5, row = 3,
           comment = "+1 mouton par tour" },
@@ -110,6 +111,7 @@ local ACTIONS_DATA = {
           comment = "+1 légume par tour" },
 
         { id = 19, title = "1 Sanglier", icon = "gfx/signs/ic_cochon.png",
+          special = "pig",				
           resources = { { rscType="pig", amount=1 } },
           accumulate = true, col = 7, row = 2,
           comment = "+1 sanglier par tour" },
@@ -118,6 +120,7 @@ local ACTIONS_DATA = {
     -- Round 4 (tours 10–11) - Colonne 7
     round4 = {
         { id = 20, title = "1 Boeuf", icon = "gfx/signs/ic_vache.png",
+          special = "cattle",				
           resources = { { rscType="cattle", amount=1 } },
           accumulate = true, col = 7, row = 3,
           comment = "+1 boeuf par tour" },

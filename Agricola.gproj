@@ -77,14 +77,19 @@
         </folder>
         <folder name="playerboard">
             <file name="assets/gfx/playerboard/bgherbe_box.png"/>
+            <file name="assets/gfx/playerboard/bgherbe_box2.png"/>
             <file name="assets/gfx/playerboard/ble_box.png"/>
             <file name="assets/gfx/playerboard/clayhouse_box.png"/>
             <file name="assets/gfx/playerboard/etable_box.png"/>
             <file name="assets/gfx/playerboard/friche_box.png"/>
+            <file name="assets/gfx/playerboard/friche_box2.png"/>
             <file name="assets/gfx/playerboard/harvestCount_box.png"/>
             <file name="assets/gfx/playerboard/labourage_box.png"/>
+            <file name="assets/gfx/playerboard/labourage_box2.png"/>
             <file name="assets/gfx/playerboard/legume_box.png"/>
             <file name="assets/gfx/playerboard/paturage_box.png"/>
+            <file name="assets/gfx/playerboard/paturage_box2.png"/>
+            <file name="assets/gfx/playerboard/stable.png"/>
             <file name="assets/gfx/playerboard/stonehouse_box.png"/>
             <file name="assets/gfx/playerboard/woodhouse_box.png"/>
         </folder>
@@ -167,7 +172,18 @@
                 <file name="assets/gfx/major/converter/valid_foodConv.png"/>
             </folder>
         </folder>
+        <folder name="fences">
+            <file name="assets/gfx/fences/cattleMeeple.png"/>
+            <file name="assets/gfx/fences/horizontalFence.png"/>
+            <file name="assets/gfx/fences/pigMeeple.png"/>
+            <file name="assets/gfx/fences/sheepMeeple.png"/>
+            <file name="assets/gfx/fences/small_cattleMeeple.png"/>
+            <file name="assets/gfx/fences/small_pigMeeple.png"/>
+            <file name="assets/gfx/fences/small_sheepMeeple.png"/>
+            <file name="assets/gfx/fences/verticalFence.png"/>
+        </folder>
         <folder name="UI">
+            <file name="assets/gfx/UI/animalsBtn.png"/>
             <file name="assets/gfx/UI/beggingBtn.png"/>
             <file name="assets/gfx/UI/blueInv_focus.png"/>
             <file name="assets/gfx/UI/blueP_Token.png"/>
@@ -181,6 +197,7 @@
             <file name="assets/gfx/UI/cancelBtn.png"/>
             <file name="assets/gfx/UI/continueBtn.png"/>
             <file name="assets/gfx/UI/eatfoodBtn.png"/>
+            <file name="assets/gfx/UI/fencewoodBtn.png"/>
             <file name="assets/gfx/UI/focusP_Token.png"/>
             <file name="assets/gfx/UI/greenInv_focus.png"/>
             <file name="assets/gfx/UI/greenP_Token.png"/>
