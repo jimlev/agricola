@@ -47,8 +47,7 @@ function GridBox:init(col, row, player)
 		stable:setPosition(32, 24) -- ajuste selon ton sprite
 		self:addChild(stable)
 		self.stable = stable
-		self.stable:setVisible(false)
-		
+		self.stable:setVisible(false)		
 		
 	self.sheepSprite = Bitmap.new(Texture.new("gfx/fences/sheepMeeple.png"))
 		self.sheepSprite:setAnchorPoint(0.5,0.5)
@@ -71,7 +70,7 @@ function GridBox:init(col, row, player)
     -- badge (comme pour les Sign)
     local badge = Bitmap.new(Texture.new("gfx/playerboard/harvestCount_box.png"))
 		badge:setAnchorPoint(0.5,0.5)
-		badge:setPosition(224, 166) -- ajuste selon ton sprite
+		badge:setPosition(224, 166) 
 		self:addChild(badge)
 		self.badge = badge
 
@@ -81,8 +80,8 @@ function GridBox:init(col, row, player)
 		badgeCount:setPosition(0, 24) -- centre du badge
 		badge:addChild(badgeCount)
 		self.badgeCount = badgeCount
-
-    self.badge:setVisible(false)
+		
+	self.badge:setVisible(false)	-- init de la classe gridBox. Tous les badges sont masqués
  
  -- === NOUVEAU : Gestion des clôtures et enclos ===
 	self.enclosureId = nil
@@ -118,7 +117,7 @@ function GridBox:init(col, row, player)
     -- Clôture verticale gauche
     local fenceLeft = Bitmap.new(Texture.new("gfx/fences/verticalFence.png"))
 	fenceLeft:setAnchorPoint(0.5, 0.5)
-    fenceLeft:setPosition(12, self.backImg:getHeight()/2)
+    fenceLeft:setPosition(10, self.backImg:getHeight()/2)
     self:addChild(fenceLeft)
 	fenceLeft:setRotation(math.random(5)-3)
     fenceLeft:setVisible(false)
@@ -127,12 +126,11 @@ function GridBox:init(col, row, player)
     -- Clôture verticale droite
     local fenceRight = Bitmap.new(Texture.new("gfx/fences/verticalFence.png"))
 	fenceRight:setAnchorPoint(0.5, 0.5)
-    fenceRight:setPosition(self.backImg:getWidth()-12, self.backImg:getHeight()/2)
+    fenceRight:setPosition(self.backImg:getWidth()-8, self.backImg:getHeight()/2)
     self:addChild(fenceRight)
 	fenceRight:setRotation(math.random(5)-2)
     fenceRight:setVisible(false)
-    self.fenceSprites.right = fenceRight
--- ===	
+    self.fenceSprites.right = fenceRight	
 
 	self:addEventListener(Event.MOUSE_DOWN, self.onClick, self)
 	
@@ -147,7 +145,6 @@ function GridBox:onClick(event)
 		gameManager:handleBoxClick(self)
 	end 
 end
-
 
 -- fonction qui retourne le state d'une case en fonction de son type
 function GridBox:getLogicalState()
@@ -169,7 +166,7 @@ function GridBox:getLogicalState()
         return self.state
     elseif self.myType == "pasture" then
 		local dominantSpecies, count = self:getDominantSpecies()
-		self.state = dominantSpecies or "pasture"  -- Fallback si vide
+		self.state = dominantSpecies or nil  -- Fallback si vide
 		return self.state
 	else
         return self.state or "friche"
@@ -177,7 +174,7 @@ function GridBox:getLogicalState()
 
 end
 
-function GridBox:updateVisual()	
+function GridBox:updateVisual()	 
     local s = self:getLogicalState()
 
     for _, img in pairs(self.imgs) do
@@ -186,25 +183,30 @@ function GridBox:updateVisual()
     
     local img = self.imgs[s]
     if img then img:setVisible(true) end
-
+	
     if s == "ble" or s == "legume" then
         self.badgeCount:setText(self.mySeedAmount)
-        self.badge:setVisible(true)
 		
-    elseif s == "sheep" or s == "pig" or s == "cattle"  then
-		local totalAnimals = (self.animals.sheep or 0) + (self.animals.pig or 0) + (self.animals.cattle or 0)
-		self.badgeCount:setText(totalAnimals.."/"..self.pastureLimit)
-		self.badge:setPosition(214, 140)
-        self.badge:setVisible(true)
-			
+    elseif s == "sheep" or s == "pig" or s == "cattle" then
 		local spriteName = s.."Sprite"	
 		self[spriteName]:setVisible(true)
     else
-        self.badge:setVisible(false)
 		self.sheepSprite:setVisible(false)
 		self.pigSprite:setVisible(false)
 		self.cattleSprite:setVisible(false)
     end
+	
+	if self.myType == "pasture" and self.badge:isVisible() then
+		self.badge:setPosition(208, 140)
+		self.badgeCount:setX(-10)
+		if s == nil then
+			self.badgeCount:setText("0/" .. self.pastureLimit)
+		else
+			local totalAnimals = self:getMyEnclosureInfo("totalCount")
+			self.badgeCount:setText(totalAnimals.."/"..self.pastureLimit)
+		end
+		self.badgeCount:center()
+	end		
 end
 
 -- *$*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$
@@ -215,6 +217,7 @@ function GridBox:convertToField()
         self.myType = "field"
         self.mySeed = nil
         self.mySeedAmount = 0
+		self.badge:setVisible(true) -- convertToField: je crée un champ, j'affiche la pancarte
         self:updateVisual()
         return true
     end
@@ -279,7 +282,6 @@ end
 
 
 function GridBox:convertToPasture(capacity)
-print("convertToPasture: ",self.row, self.col,self.myType)
     if self.myType == "empty" then
         self.myType = "pasture"
         self.mySpecies = nil
@@ -329,6 +331,15 @@ function GridBox:setGrowingStatus()
 	end
 end
 
+function GridBox:getMyEnclosureInfo(property)
+    if not self.enclosureId then return nil end
+    
+    local info = self.myPlayer.board:getEnclosureInfo(self.enclosureId)
+    if not info then return nil end
+    
+    return info[property]
+end
+
 function GridBox:getCapacityInfo()
 	if self.myType ~= "pasture" then return nil end
 	
@@ -343,7 +354,6 @@ function GridBox:getCapacityInfo()
 end
 
 function GridBox:getDominantSpecies()
-	print("On me demande ma dominantSpecies alors que j'appartiens au joueur", self.myPlayer.name)
     local max = 0
     local dominant = nil
     for sp, n in pairs(self.animals) do

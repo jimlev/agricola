@@ -33,8 +33,8 @@ function PlayerBoard:init(player)
 			
 			if (r == 2 and c == 1) or (r == 3 and c == 1) then
 				box:convertToHouse("wood")
-				
 			end
+			
 			if (r == 3 and c == 1) then
 				box.enclosureId = 0
 			end
@@ -368,7 +368,6 @@ function PlayerBoard:removeBoxFromFence(box)
     return true
 end
 
-
 function PlayerBoard:calculateFenceCost()
     local totalCost = 0
     
@@ -526,7 +525,15 @@ function PlayerBoard:createEnclosure(boxList, turn)
     -- Calculer et attribuer la capacité
     self:updateEnclosureCapacity(enclosureId)  -- ← Ajoute cet appel
     print(string.format("createEnclosure() dit:✅ Enclos #%d créé avec %d cases", enclosureId, #boxList))
-    
+	
+	
+	for i, box in ipairs(boxList) do
+		if i == 1 then
+			box.badge:setTexture(Texture.new("gfx/fences/badgeCount.png"))
+			box.badge:setVisible(true) -- createEnclosure: je crée un enclos, j'affiche la pancerte dans la box 'id 1'
+		end
+	end
+   
     return enclosureId
 end
 
@@ -574,15 +581,14 @@ function PlayerBoard:getEnclosureInfo(enclosureId)
     end
 
     return {
-        id = enclosureId,
-        boxes = boxes,
-        animals = totalAnimals,
-        dominantSpecies = dominant,
-        totalCount = totalAnimals.sheep + totalAnimals.pig + totalAnimals.cattle,
-        capacity = capacity
+		id = enclosureId,                    -- L'ID de l'enclos (ex: 1, 2, 3, ou 0 pour maison)
+		boxes = boxes,                       -- Liste des GridBox qui composent cet enclos |Permet d'itérer sur toutes les cases
+		animals = totalAnimals,              -- Table des animaux TOTAUX de l'enclos | {sheep = 5, pig = 0, cattle = 2}
+		dominantSpecies = dominant,          -- L'espèce la plus nombreuse dans l'enclos | "sheep", "pig", "cattle" ou nil
+		totalCount = totalAnimals.sheep + totalAnimals.pig + totalAnimals.cattle,-- Nombre TOTAL d'animaux (toutes espèces)
+		capacity = capacity                  -- Capacité MAXIMALE de l'enclos `| = nb_cases × 2 (× 2 si étable présente)
     }
 end
-
 
 function PlayerBoard:findConnectedGroups(boxes)
     local groups = {}
@@ -621,7 +627,6 @@ function PlayerBoard:collectConnectedBoxes(box, allBoxes, visited, group)
 	end
 end
 
-
 function PlayerBoard:updateEnclosureCapacity(enclosureId)
     local info = self:getEnclosureInfo(enclosureId)
     if not info then return end
@@ -644,8 +649,7 @@ function PlayerBoard:getAllEnclosureIds()
                 seen[box.enclosureId] = true
             end
         end
-    end
-    
+    end    
     return ids
 end
 
@@ -654,6 +658,15 @@ function PlayerBoard:redistributeAnimalsInEnclosure(enclosureId)
     local info = self:getEnclosureInfo(enclosureId)
     if not info or info.totalCount == 0 then return end
     
+--[[
+	id = enclosureId,                    -- L'ID de l'enclos (ex: 1, 2, 3, ou 0 pour maison)
+	boxes = boxes,                       -- Liste des GridBox qui composent cet enclos |Permet d'itérer sur toutes les cases
+	animals = totalAnimals,              -- Table des animaux TOTAUX de l'enclos | {sheep = 5, pig = 0, cattle = 2}
+	dominantSpecies = dominant,          -- L'espèce la plus nombreuse dans l'enclos | "sheep", "pig", "cattle" ou nil
+	totalCount = totalAnimals.sheep + totalAnimals.pig + totalAnimals.cattle,-- Nombre TOTAL d'animaux (toutes espèces)
+	capacity = capacity                  -- Capacité MAXIMALE de l'enclos `| = nb_cases × 2 (× 2 si étable présente)
+]]--
+	
     print("→ Redistribution enclos #" .. enclosureId)
     
     -- 1) Collecter tous les animaux de l'enclos
@@ -691,6 +704,8 @@ function PlayerBoard:redistributeAnimalsInEnclosure(enclosureId)
         box.state = dominantSpecies  -- "sheep", "pig", "cattle" ou "pasture" si vide
         box:updateVisual()
     end
+
+
 end
 --[[
 ========================================================================================
@@ -742,18 +757,27 @@ function PlayerBoard:addAnimalsToEnclosure(enclosureId, species, count)
         box:updateVisual()
     end
     
-    print(string.format("✅ +%d %s dans enclos #%d (%d/%d)", 
-        count, species, enclosureId, info.totalCount + count, info.capacity))
+    print(string.format("✅ +%d %s dans enclos #%d (%d/%d)",count, species, enclosureId, info.totalCount + count, info.capacity))
     
     return true
 end
-
 
 function PlayerBoard:autoPlaceAnimals(species, quantity)
     print("\n=== autoPlaceAnimals ===")
     print("Species =", species, "| Quantity =", quantity)
 
     if quantity <= 0 then return 0 end
+
+	-----------------------------------------------------
+    -- PHASE INIT : Vérifier la maison (enclos #0)
+    -----------------------------------------------------
+    local house = self:getEnclosureInfo(0)
+    if house and house.totalCount == 1 and house.dominantSpecies == species then
+        print("→ Phase 0 : Récupération maison #0 avec 1 " .. species)
+        quantity = quantity + 1  -- Ajouter l'animal de la maison
+        self:_clearEnclosure(house)  -- Vider la maison
+        print("   Nouvelle quantity = " .. quantity)
+    end
 
     -----------------------------------------------------
     -- PHASE A : Enclos contenant déjà la même espèce
@@ -835,20 +859,20 @@ function PlayerBoard:autoPlaceAnimals(species, quantity)
 	-- 2) Tester le remaining
 	while quantity > 0 do
 		-- Si reste 1 → maison
-		if quantity == 1 then
-			local house = self:getEnclosureInfo(0)
-			if house and house.totalCount == 0 and house.capacity >= 1 then
-				self:_addToEnclosure(house, species, 1)
-				print("→ Phase C : Dernier animal dans maison")
-				return 0
-			else
-				break  -- Maison pleine ou inexistante
-			end
-		end
+--		if quantity == 1 then
+--			local house = self:getEnclosureInfo(0)
+--			if house and house.totalCount == 0 and house.capacity >= 1 then
+--				self:_addToEnclosure(house, species, 1)
+--				print("→ Phase C : Dernier animal dans maison")
+--				return 0
+--			else
+--				break  -- Maison pleine ou inexistante
+--			end
+--		end
 		
 		-- Si remaining > 1 → chercher un enclos vide qui peut tout contenir
 		local foundEnclosure = false
-		for id = 1, self.nextEnclosureId - 1 do
+		for id = 0, self.nextEnclosureId - 1 do
 			if id ~= maxFreeSizeEnclosure then  -- Éviter celui déjà rempli
 				local info = self:getEnclosureInfo(id)
 				if info and info.totalCount == 0 and info.capacity >= quantity then

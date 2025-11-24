@@ -339,6 +339,7 @@ function gameManager:executeAction()
 	-- on surcharge le player par le snapshot...
 	self:commitSnapshot(player, snapshot)
 	-- ... puis on détruit le snapshot
+	snapshot:printFarmInfo()
 	self:killSnapshot(player)
 	
 -- ==================================================================================================================	
@@ -1301,7 +1302,12 @@ function gameManager:createPlayerSnapshot(player)
 			snapshotGridBox.pastureLimit = playerGridBox.pastureLimit
 			snapshotGridBox.hasStable = playerGridBox.hasStable
 			snapshotGridBox.inGrowingPhase = playerGridBox.inGrowingPhase 
-	
+			
+			snapshotGridBox.badge:setVisible(playerGridBox.badge:isVisible())
+			if snapshotGridBox.myType == "pasture" then
+				snapshotGridBox.badge:setTexture(Texture.new("gfx/fences/badgeCount.png"))
+			end	
+			
 			snapshotGridBox.stable:setVisible(playerGridBox.stable:isVisible())
 			snapshotGridBox.fenceData = table.clone(playerGridBox.fenceData, nil, true)
 			snapshotGridBox.fenceTurnCreated = playerGridBox.fenceTurnCreated
@@ -1392,8 +1398,8 @@ function gameManager:commitSnapshot(player, clone)
             if originalGridBox and cloneGridBox then
 			
 				originalGridBox.myType = cloneGridBox.myType 
-				
 				originalGridBox.state = cloneGridBox.state 
+				
 				originalGridBox.mySeed = cloneGridBox.mySeed 
 				originalGridBox.mySeedAmount = cloneGridBox.mySeedAmount
 				originalGridBox.mySpecies = cloneGridBox.mySpecies
@@ -1401,6 +1407,11 @@ function gameManager:commitSnapshot(player, clone)
 				originalGridBox.pastureLimit = cloneGridBox.pastureLimit
 				originalGridBox.hasStable = cloneGridBox.hasStable
 				originalGridBox.inGrowingPhase = cloneGridBox.inGrowingPhase 
+				
+				originalGridBox.badge:setVisible(cloneGridBox.badge:isVisible())
+				if originalGridBox.myType == "pasture" then
+					originalGridBox.badge:setTexture(Texture.new("gfx/fences/badgeCount.png"))
+				end	
 				
 				originalGridBox.stable:setVisible(cloneGridBox.stable:isVisible())
 				originalGridBox.fenceData = table.clone(cloneGridBox.fenceData, nil, true)
@@ -1412,21 +1423,23 @@ function gameManager:commitSnapshot(player, clone)
         end
     end
 
---	originalPlayer.board.enclosures = table.clone(clone.board.enclosures, nil, true)
 	originalPlayer.board.nextEnclosureId = clone.board.nextEnclosureId
 	originalPlayer.board:refreshAllFenceVisuals()
---[[
-	-- Après avoir copié enclosures
-	for enclosureId, enclosure in pairs(originalPlayer.board.enclosures) do
-		local newBoxList = {}
-		for _, cloneBox in ipairs(enclosure.boxes) do
-			-- Retrouver la vraie box correspondante
-			local realBox = originalPlayer.board.boxes[cloneBox.row][cloneBox.col]
-			table.insert(newBoxList, realBox)
-		end
-		enclosure.boxes = newBoxList
-	end
-]]--
+--	
+--	local snapBoard = clone.board.boxes
+--	local realBoard = originalPlayer.board.boxes
+--
+--	for row = 1, #snapBoard do
+--		for col = 1, #snapBoard[row] do
+--			
+--			local cloneBox = snapBoard[row][col]
+--			local realBox  = realBoard[row][col]
+--
+--			-- Reprendre l'état de visibilité du badge
+--			realBox.badge:setVisible(cloneBox.badge:isVisible())
+--		end
+--	end
+	
 --	print("--------------------------------  < < < 🧑‍🤝‍🧑 Player rétabli")
     return true
 end

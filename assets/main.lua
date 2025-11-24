@@ -38,17 +38,19 @@ function startGame()
 		end
 		if e.keyCode == KeyCode.B then  -- touche B pour Debug
 			p:printFarmInfo()
-			--p:debugHouseState()
+			p:debugHouseState()
 		end
 		
 		   -- NOUVEAU : Test enclos
 		if e.keyCode == KeyCode.E then  -- touche E pour Debug enclos
-			local p = gameManager:getActivePlayer()
-			if p.board then
-				p.board:debugEnclosures()
-			end
+			p.board:debugEnclosures()
 		end
-
+		   -- NOUVEAU : skip turn
+		if e.keyCode == KeyCode.TAB then  -- touche E pour Debug enclos
+			p.availableMeeples = 0
+			gameManager.pendingAction={}
+			gameManager:nextPlayer()
+		end
 	end)
 end
 startGame()

@@ -362,6 +362,16 @@ function Player:checkFieldGrow()
 end
 
 
+function Player:updateBadgeVisibility()
+    for row = 1, #self.board.boxes do
+        for col = 1, #self.board.boxes[row] do
+            local box = self.board.boxes[row][col]
+			
+
+        end
+    end
+end
+
 -- Retourne une phrase récapitulative de la récolte
 function Player:getHarvestSummary()
     local summary = { grain = 0, vegetable = 0 }
@@ -456,7 +466,7 @@ function Player:printFarmInfo()
                 end
                 if box.inGrowingPhase then table.insert(extra, "🌱 croissance") end
                 if box.hasStable then table.insert(extra, "🎠 étable") end
-                if box.enclosureId then table.insert(extra, "enclos #" .. box.enclosureId.."  [ 🐑: "..box.animals.sheep.." | 🐖: "..box.animals.pig.." | 🐄: "..box.animals.cattle.."]") end
+                if box.enclosureId then table.insert(extra, "enclos #" .. box.enclosureId.."  [ 🐑: "..box.animals.sheep.." | 🐖: "..box.animals.pig.." | 🐄: "..box.animals.cattle.."]. Pancarte visible ? : "..tostring(box.badge:isVisible())) end
 
                 if box.state and box.state ~= "normal" then
                     table.insert(extra, "état: " .. tostring(box.state))
@@ -476,7 +486,8 @@ function Player:printFarmInfo()
 
     -- === 2) LISTE DES ENCLOS ===
     print("\n=== ENCLOS ===")
-
+	self.board:debugEnclosures()
+--[[
     local enclosures = self.board.enclosures or {}
 
     if next(enclosures) == nil then
@@ -513,71 +524,6 @@ function Player:printFarmInfo()
             print("    Cases : " .. table.concat(coords, ", "))
         end
     end
-
+]]--
     print("=== Fin de l'état de la ferme ===\n")
-end
-
-
-function Player:old_printFarmInfo()
-    print("=== État de la ferme de " .. tostring(self.name or "Joueur inconnu") .. " ===")
-    if not self.board or not self.board.boxes then
-        print("⚠️  Pas de plateau associé à ce joueur.")
-        return
-    end
-
-    local typeIcons = {
-        house = "🏠",
-        field = "🌾", 
-        empty = "⿻️",
-        pasture = "🐑"
-    }
-
-    for row = 1, #self.board.boxes do
-        for col = 1, #self.board.boxes[row] do
-            local box = self.board.boxes[row][col]
-            if box and box.myType and box.myType ~= "empty" then
-                local icon = typeIcons[box.myType] or "?"
-                
-                -- Construction des informations supplémentaires
-                local additionalInfo = {}
-                
-                if box.mySeed then
-                    table.insert(additionalInfo, "graine: " .. tostring(box.mySeed))
-                end
-                
-                if box.mySeedAmount and box.mySeedAmount > 0 then
-                    table.insert(additionalInfo, "quantité: " .. tostring(box.mySeedAmount))
-                end
-                
-                if box.inGrowingPhase then
-                    table.insert(additionalInfo, "en croissance")
-                end
-                
-                if box.hasStable then
-                    table.insert(additionalInfo, "🎠 étable")
-                end
-                
-                if box.state and box.state ~= "normal" then
-                    table.insert(additionalInfo, "état: " .. tostring(box.state))
-                end
-                
-                -- Formatage de la ligne
-                local info = string.format(
-                    "%s Case [%d,%d] | type: %s",
-                    icon,
-                    col,
-                    row,
-                    tostring(box.myType)
-                )
-                
-                -- Ajout des informations supplémentaires si elles existent
-                if #additionalInfo > 0 then
-                    info = info .. " | " .. table.concat(additionalInfo, " | ")
-                end
-                
-                print(info)
-            end
-        end
-    end
-    print("=== Fin de l'état de la ferme ===")
 end

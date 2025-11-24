@@ -49,6 +49,23 @@ function btn:onMouseUp(event)
 	end
 end
 
+
+-- =================================================================
+
+function TextField:center()
+    if not self.text or self.width == 0 then return end
+    
+    local textWidth = self:getWith()
+    local centeredX = math.floor((self.width - textWidth) / 2)
+    
+    -- Appliquer le centrage
+    if self.setX then
+        self:setX(centeredX)
+    else
+        self.x = centeredX
+    end
+end
+
 -- =================================================================
 function createMeepleBank()
 
@@ -276,7 +293,6 @@ function createViewCardmarketBtn()
 end
 
 function updateTurnTracker()
-	
 	local period = {1,1,1,1,2,2,2,3,3,4,4,5,5,6}
 	local tt = gameManager.ui.tracker
 	local round = gameManager.currentRound

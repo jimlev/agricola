@@ -173,6 +173,7 @@
             </folder>
         </folder>
         <folder name="fences">
+            <file name="assets/gfx/fences/badgeCount.png"/>
             <file name="assets/gfx/fences/cattleMeeple.png"/>
             <file name="assets/gfx/fences/horizontalFence.png"/>
             <file name="assets/gfx/fences/pigMeeple.png"/>
