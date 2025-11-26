@@ -330,9 +330,9 @@ function gameManager:executeAction()
     elseif self.currentAction == "sheep" then
 		--snapshot:addResource("sheep", 2)
     elseif self.currentAction == "pig" then
-		snapshot:addResource("pig", 2)
+		--snapshot:addResource("pig", 2)
     elseif self.currentAction == "cattle" then
-		snapshot:addResource("cattle", 2)		
+		--snapshot:addResource("cattle", 2)		
 	end
 	
 	
@@ -749,6 +749,13 @@ function gameManager:dispatchActionToHandler(actionData, snapshot)
 		
 	elseif self.currentAction == "sheep" then
       	self:beginAddSheep(snapshot)	
+	
+	elseif self.currentAction == "pig" then
+      	self:beginAddPig(snapshot)	
+		
+	elseif self.currentAction == "cattle" then
+      	self:beginAddCattle(snapshot)	
+		
     else
         print("⚠️ Tentative d'action inconnue : " .. tostring(action),tostring(action.title))
     end
@@ -799,7 +806,8 @@ function gameManager:beginRenovation(player)  -- "renovation"
 	elseif mat == "clay" then
 		nextMat = "stone"
 	end
-
+	
+	player.house.rscType = nextMat
 	player:setNewHouseState(nextMat)
 	player:payResources(cost)		
 	player.house.rscType = nextMat
@@ -813,16 +821,26 @@ function gameManager:beginAddSheep(player)   -- "mouton"
 	player:addResource("sheep", self.pendingAction.sign.stock)
 	player.board:autoPlaceAnimals("sheep",self.pendingAction.sign.stock)
 	self.ui:validAnimalRepartition(player)
-	
-  --  player.board:findBestEnclosure("sheep", self.pendingAction.sign.stock)
---	local sheepCount = self.pendingAction.sign.stock
---	local boxe = player.board.boxes[3] 
---	if boxe:canAddAnimals("sheep", sheepCount) then
---		boxe:addAnimals("sheep", sheepCount)
---		valid = true	
---	end
 end
  
+function gameManager:beginAddPig(player)   -- "pig"
+    player.board:setVisible(true)
+	player.board.isPlayable = true
+
+	player:addResource("pig", self.pendingAction.sign.stock)
+	player.board:autoPlaceAnimals("pig",self.pendingAction.sign.stock)
+	self.ui:validAnimalRepartition(player)
+end
+
+function gameManager:beginAddCattle(player)   -- "cattle"
+    player.board:setVisible(true)
+	player.board.isPlayable = true
+
+	player:addResource("cattle", self.pendingAction.sign.stock)
+	player.board:autoPlaceAnimals("cattle",self.pendingAction.sign.stock)
+	self.ui:validAnimalRepartition(player)
+end
+
 function gameManager:beginAddStable(player)   -- "etable"
     player.board:setVisible(true)
 	player.board.isPlayable = true
@@ -912,11 +930,12 @@ function gameManager:handleBoxClick(box)
 			valid = true
 		end		
 
-    elseif self.currentAction == "etable" and box.state == "friche" or box.myType == "pasture" then
+    elseif self.currentAction == "etable" and (box.state == "friche" or box.myType == "pasture") then
 		if box:buildStable() then
 			if cost then
 				snapshot:payResources(cost)
 				snapshot:updateInventory()
+				snapshot.board:updateEnclosureCapacity(box.enclosureId)
 				valid = true	
 			end
 		end
@@ -1068,6 +1087,7 @@ function gameManager:handleHarvestBirth(player)
     -- première mise à jour à la création
     bouton:updateButtonState()
 	player:updateInventory()
+	player:updateAllBoxVisual()
 	
     -- clic pour passer à la phase suivante
     bouton:addEventListener(Event.MOUSE_DOWN, function(event)
@@ -1241,7 +1261,7 @@ end
 function gameManager:showSettings()
 	local player = self:getActivePlayer()
 	if self.showingSettings == false then
-		print("SHOW SETTINGS SCREEN")
+		print(")))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))) SHOW SETTINGS SCREEN")
 		player.board.isPlayable = false
 		self.gameIsPaused = true
 		self.showingSettings = true 
@@ -1317,24 +1337,15 @@ function gameManager:createPlayerSnapshot(player)
         end
     end
 	
---	snapshot.board.enclosures = table.clone(originalPlayer.board.enclosures, nil, true)
 	snapshot.board.nextEnclosureId = originalPlayer.board.nextEnclosureId
 	snapshot.board:refreshAllFenceVisuals()
-	-- Et re-mapper les boxes clonées
---	for _, enclosure in pairs(snapshot.board.enclosures) do
---		local newBoxList = {}
---		for _, origBox in ipairs(enclosure.boxes) do
---			local snapBox = snapshot.board.boxes[origBox.row][origBox.col]
---			table.insert(newBoxList, snapBox)
---		end
---		enclosure.boxes = newBoxList
---	end
+	snapshot:updateAllBoxVisual()
 
 	for i = 2, #originalPlayer.converters do -- je ne prends pas l'index 1 qui est spawn a la créa du joueur
 		local converter = RscConverter.new(snapshot, originalPlayer.converters[i].mi, 0)
 		table.insert(snapshot.converters, converter)
 	end
-	--snapshot.board.slotList = table.clone(originalPlayer.board.slotList, nil, true)
+
 	return snapshot
 end
 
@@ -1425,6 +1436,7 @@ function gameManager:commitSnapshot(player, clone)
 
 	originalPlayer.board.nextEnclosureId = clone.board.nextEnclosureId
 	originalPlayer.board:refreshAllFenceVisuals()
+	originalPlayer:updateAllBoxVisual()
 --	
 --	local snapBoard = clone.board.boxes
 --	local realBoard = originalPlayer.board.boxes
@@ -1538,7 +1550,7 @@ function gameManager:debugState()
 
         -- Tableau des ressources 
         print(string.format(
-            "  Inventaire || wood: %d | clay: %d | stone: %d | reed: %d | grain: %d | vegetable: %d | sheep: %d | pig: %d | cattle: %d | food: %d |",
+            "  Inventaire || wood: %d | clay: %d | stone: %d | reed: %d | grain: %d | veg : %d | sheep: %d | pig: %d | cattle: %d | food: %d |",
             player.resources["wood"], player.resources["clay"], player.resources["stone"], player.resources["reed"], 
             player.resources["grain"], player.resources["vegetable"], player.resources["sheep"], player.resources["pig"], 
             player.resources["cattle"], player.resources["food"]

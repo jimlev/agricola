@@ -92,6 +92,8 @@
             <file name="assets/gfx/playerboard/stable.png"/>
             <file name="assets/gfx/playerboard/stonehouse_box.png"/>
             <file name="assets/gfx/playerboard/woodhouse_box.png"/>
+            <file name="assets/gfx/playerboard/woodhouse_box2.png"/>
+            <file name="assets/gfx/playerboard/woodhouse_box3.png"/>
         </folder>
         <folder name="meeples">
             <file name="assets/gfx/meeples/blue_1_meeple.png"/>

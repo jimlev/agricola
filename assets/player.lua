@@ -18,8 +18,8 @@ function Player:init(id, name, color, humanOrNot)
 	self.hasPlayedThisRound = false
     -- Ressources
     self.resources = {
-        wood = 18,
-        clay = 3,
+        wood = 28,
+        clay = 6,
         stone = 0,
 		reed = 0,
         grain = 0,
@@ -34,7 +34,7 @@ function Player:init(id, name, color, humanOrNot)
 	self.pendingMajorCardIndex = nil
     -- Progression
     self.familySize = 1 -- total quand la famille s'aggrandit
-    self.house = {rscType = "wood", rooms = 2}
+    self.house = {rscType = "wood", rooms = 2} -- wood, clay , stone
     self.fields = 0
     self.pastures = 0
 	self.malusCards = 0
@@ -332,11 +332,12 @@ end
 -- !#!#!#!#!#!#!#!#!#!#!#  HELPERS DES RECOLTES   !#!#!#!#!#!#!#!#!#!#!#
 -- !#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!
 
--- Retourne une phrase récapitulative de la récolte
-function Player:setNewHouseState(mat)
+
+function Player:setNewHouseState()
     for row = 1, #self.board.boxes do
-        for col = 1, #self.board.boxes[row] do
-            local box = self.board.boxes[row][col]
+        for col = 1, #self.board.boxes[row] do	
+			local mat = self.house.rscType	
+			local box = self.board.boxes[row][col]
 			box:renovateHouse(mat)
         end
     end
@@ -346,11 +347,11 @@ function Player:debugHouseState()
     for row = 1, #self.board.boxes do
         for col = 1, #self.board.boxes[row] do
             local box = self.board.boxes[row][col]
-			box:updateVisual(">>> ")
+			box:updateVisual()
         end
     end
 end
-
+ 
 -- Bloque les champs plantés pour éviter les re-plantage
 function Player:checkFieldGrow()
    for row = 1, #self.board.boxes do
@@ -362,12 +363,11 @@ function Player:checkFieldGrow()
 end
 
 
-function Player:updateBadgeVisibility()
+function Player:updateAllBoxVisual()
     for row = 1, #self.board.boxes do
         for col = 1, #self.board.boxes[row] do
             local box = self.board.boxes[row][col]
-			
-
+			box:updateVisual()
         end
     end
 end
@@ -457,7 +457,7 @@ function Player:printFarmInfo()
             local box = self.board.boxes[row][col]
             if box and box.myType and box.myType ~= "empty" then
                 local icon = typeIcons[box.myType] or "❓"
-
+    
                 local extra = {}
 
                 if box.mySeed then table.insert(extra, "graine: " .. box.mySeed) end
@@ -465,20 +465,19 @@ function Player:printFarmInfo()
                     table.insert(extra, "quantité: " .. box.mySeedAmount)
                 end
                 if box.inGrowingPhase then table.insert(extra, "🌱 croissance") end
-                if box.hasStable then table.insert(extra, "🎠 étable") end
-                if box.enclosureId then table.insert(extra, "enclos #" .. box.enclosureId.."  [ 🐑: "..box.animals.sheep.." | 🐖: "..box.animals.pig.." | 🐄: "..box.animals.cattle.."]. Pancarte visible ? : "..tostring(box.badge:isVisible())) end
-
-                if box.state and box.state ~= "normal" then
+                if box.enclosureId then table.insert(extra, "enclos #" .. box.enclosureId.."  [ 🐑: "..box.animals.sheep.." | 🐖: "..box.animals.pig.." | 🐄: "..box.animals.cattle.."]. Pancarte visible ? : "..tostring(box.badge:isVisible()).." "..tostring(box.badgeCount:getText())) end
+	
+                if box.state and box.state ~= "friche" then
                     table.insert(extra, "état: " .. tostring(box.state))
                 end
 
                 local line = string.format("%s Case [%d,%d] | type: %s",
                     icon, col, row, box.myType)
+                if box.hasStable then table.insert(extra, "🛖 étable") end
 
                 if #extra > 0 then
                     line = line .. " | " .. table.concat(extra, " | ")
                 end
-
                 print(line)
             end
         end
@@ -486,7 +485,7 @@ function Player:printFarmInfo()
 
     -- === 2) LISTE DES ENCLOS ===
     print("\n=== ENCLOS ===")
-	self.board:debugEnclosures()
+	--self.board:debugEnclosures()
 --[[
     local enclosures = self.board.enclosures or {}
 

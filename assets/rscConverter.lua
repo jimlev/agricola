@@ -132,7 +132,7 @@ function RscConverter:onPressConversion(rscKind)
     self.totalFoodConvert:setText(tostring(self.pendingFood))
 	local w = self.totalFoodConvert:getWidth()
 	local x = self.totalFoodConvert.myX 
-	self.totalFoodConvert:setX(math.floor(x - w/2))
+	self.totalFoodConvert:setX(math.floor(x - w/2)) -- utiliser text:center() ici !
 	
 	p:updateConverterBtn()
     p:updateInventory()
@@ -192,13 +192,30 @@ function RscConverter:commit()
 	
 	local p = self.player
     if not p then return end
+	
+	local toRelocate = {}
+	
+	for k, spent in pairs(self.refund) do
+		-- On vide les animaux SEULEMENT si on en consomme
+		if (k == "sheep" or k == "pig" or k == "cattle") and spent > 0 then
+			local count = p.board:getTotalAnimalCount(k)
+			p.board:removeAnimal(k, count) -- je retire tous les animaux concernés du plateau
+			table.insert(toRelocate, k)
+		end
+	end
 
     if self.pendingFood and self.pendingFood > 0 then
         p:addResource("food", self.pendingFood)
         p:updateInventory()
     end
 	
-    self:resetPending()
+	for _, animal in ipairs(toRelocate) do
+		p.board:autoPlaceAnimals(animal, p.resources[animal])
+	end
+
+	gameManager.ui:validAnimalRepartition(p)
+
+	self:resetPending()
     self.okButton:setVisible(false)
     self.cancelButton:setVisible(false)
     --self.converterBase:setAlpha(0.3)

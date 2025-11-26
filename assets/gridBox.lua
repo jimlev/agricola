@@ -30,10 +30,7 @@ function GridBox:init(col, row, player)
         laboure  = Bitmap.new(Texture.new("gfx/playerboard/labourage_box.png")),
         ble      = Bitmap.new(Texture.new("gfx/playerboard/ble_box.png")),
         legume   = Bitmap.new(Texture.new("gfx/playerboard/legume_box.png")),
-		pasture  = Bitmap.new(Texture.new("gfx/playerboard/paturage_box.png")),
-        m_wood   = Bitmap.new(Texture.new("gfx/playerboard/woodhouse_box.png")),
-        m_clay    = Bitmap.new(Texture.new("gfx/playerboard/clayhouse_box.png")),
-        m_stone   = Bitmap.new(Texture.new("gfx/playerboard/stonehouse_box.png"))
+		pasture  = Bitmap.new(Texture.new("gfx/playerboard/paturage_box.png"))
     }
 
     -- ajouter tous les visuels mais invisibles
@@ -48,23 +45,26 @@ function GridBox:init(col, row, player)
 		self:addChild(stable)
 		self.stable = stable
 		self.stable:setVisible(false)		
-		
+	
+	self.meepleLayer = Sprite.new()
+        self:addChild(self.meepleLayer)
+	
 	self.sheepSprite = Bitmap.new(Texture.new("gfx/fences/sheepMeeple.png"))
 		self.sheepSprite:setAnchorPoint(0.5,0.5)
 		self.sheepSprite:setPosition(132,100)
-		self:addChild(self.sheepSprite)
+		self.meepleLayer:addChild(self.sheepSprite)
 		self.sheepSprite:setVisible(false)
 
 	self.pigSprite = Bitmap.new(Texture.new("gfx/fences/pigMeeple.png"))
 		self.pigSprite:setAnchorPoint(0.5,0.5)
 		self.pigSprite:setPosition(132,100)		
-		self:addChild(self.pigSprite)
+		self.meepleLayer:addChild(self.pigSprite)
 		self.pigSprite:setVisible(false)
 		
 	self.cattleSprite = Bitmap.new(Texture.new("gfx/fences/cattleMeeple.png"))
 		self.cattleSprite:setAnchorPoint(0.5,0.5)
 		self.cattleSprite:setPosition(132,100)	
-		self:addChild(self.cattleSprite)
+		self.meepleLayer:addChild(self.cattleSprite)
 		self.cattleSprite:setVisible(false)	
 		
     -- badge (comme pour les Sign)
@@ -162,8 +162,12 @@ function GridBox:getLogicalState()
             return "legume"
         end
     elseif self.myType == "house" then
-		--self.state = "m_"..self.myPlayer.house.rscType
+	print("JE SUIS UNE MAISON , MON STATE EST ",self.state)
+		local dominantSpecies, count = self:getDominantSpecies()
+		self.state = dominantSpecies or nil  -- Fallback si vide
+			print("JE SUIS UNE MAISON , MON STATE EST ",self.state)
         return self.state
+		
     elseif self.myType == "pasture" then
 		local dominantSpecies, count = self:getDominantSpecies()
 		self.state = dominantSpecies or nil  -- Fallback si vide
@@ -174,7 +178,7 @@ function GridBox:getLogicalState()
 
 end
 
-function GridBox:updateVisual()	 
+function GridBox:updateVisual()
     local s = self:getLogicalState()
 
     for _, img in pairs(self.imgs) do
@@ -184,7 +188,7 @@ function GridBox:updateVisual()
     local img = self.imgs[s]
     if img then img:setVisible(true) end
 	
-    if s == "ble" or s == "legume" then
+    if s == "ble" or s == "legume" or s == "laboure" then
         self.badgeCount:setText(self.mySeedAmount)
 		
     elseif s == "sheep" or s == "pig" or s == "cattle" then
@@ -197,16 +201,53 @@ function GridBox:updateVisual()
     end
 	
 	if self.myType == "pasture" and self.badge:isVisible() then
-		self.badge:setPosition(208, 140)
-		self.badgeCount:setX(-10)
+		self.badge:setPosition(208, 146)
+		self.badgeCount:setX(6)
 		if s == nil then
 			self.badgeCount:setText("0/" .. self.pastureLimit)
 		else
 			local totalAnimals = self:getMyEnclosureInfo("totalCount")
 			self.badgeCount:setText(totalAnimals.."/"..self.pastureLimit)
+				print(string.format("updateVisual: Box [%d,%d] | badgeCount: %s | animaux: 🐑%d 🐖%d 🐄%d", self.col, self.row, totalAnimals.."/"..self.pastureLimit, self.animals.sheep, self.animals.pig, self.animals.cattle))
+
 		end
-		self.badgeCount:center()
-	end		
+			self.badgeCount:center()
+	end	
+	
+	-- /////// AFFICHAGE DES MAISONS
+	if self.myType == "house" then
+		
+		local mat = self.myPlayer.house.rscType
+		local imageIndex = (self.col + self.row) % 3 + 1  -- Donne 1, 2 ou 3
+
+		if mat == "wood" then
+			if imageIndex == 1 then
+				self.backImg = Bitmap.new(Texture.new("gfx/playerboard/woodhouse_box.png"))
+			elseif imageIndex == 2 then
+				self.backImg = Bitmap.new(Texture.new("gfx/playerboard/woodhouse_box2.png"))
+			else
+				self.backImg = Bitmap.new(Texture.new("gfx/playerboard/woodhouse_box3.png"))
+			end
+		elseif mat == "clay" then
+			if imageIndex == 1 then
+				self.backImg = Bitmap.new(Texture.new("gfx/playerboard/clayhouse_box.png"))
+			elseif imageIndex == 2 then
+				self.backImg = Bitmap.new(Texture.new("gfx/playerboard/clayhouse_box2.png"))
+			else
+				self.backImg = Bitmap.new(Texture.new("gfx/playerboard/clayhouse_box3.png"))
+			end
+		elseif mat == "stone" then
+			if imageIndex == 1 then
+				self.backImg = Bitmap.new(Texture.new("gfx/playerboard/stonehouse_box.png"))
+			elseif imageIndex == 2 then
+				self.backImg = Bitmap.new(Texture.new("gfx/playerboard/stonehouse_box2.png"))
+			else
+				self.backImg = Bitmap.new(Texture.new("gfx/playerboard/stonehouse_box3.png"))
+			end	
+		end
+		
+		self:addChild(self.backImg)
+	end
 end
 
 -- *$*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$
@@ -271,11 +312,6 @@ end
 
 function GridBox:renovateHouse(material)
     if self.myType ~= "house" then return false end
-	
-	print(self.col,self.row," converti en",material)
-
-    self.state = "m_" .. material  -- ex: m_wood, m_clay, m_stone
-	
     self:updateVisual()  -- met à jour le visuel
     return true
 end

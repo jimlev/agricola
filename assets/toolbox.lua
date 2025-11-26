@@ -51,21 +51,30 @@ end
 
 
 -- =================================================================
-
-function TextField:center()
-    if not self.text or self.width == 0 then return end
-    
-    local textWidth = self:getWith()
-    local centeredX = math.floor((self.width - textWidth) / 2)
-    
-    -- Appliquer le centrage
-    if self.setX then
-        self:setX(centeredX)
-    else
-        self.x = centeredX
-    end
+function TextField:old_center()
+    local x, y = self:getPosition()
+    local w = self:getWidth()
+    local anchorX, anchorY, anchorZ = self:getAnchorPosition()
+    self.myCenter = self.myCenter or anchorX
+  print(self, "self.myCenter",self.myCenter)
+    local newX = (x -  (w / 2))+ self.myCenter
+    self:setPosition(newX, y)
 end
 
+function TextField:center()
+    if not self.centerTargetX then
+        self.centerTargetX = self:getX()
+    end
+
+    self:setX(self.centerTargetX - self:getWidth() / 2)
+end
+
+
+function TextField:centerX(targetX)
+    local w = self:getWidth()
+    local anchorX = self:getAnchorPosition()
+    self:setPosition(targetX or application:getContentWidth()/2, self:getY())
+end
 -- =================================================================
 function createMeepleBank()
 

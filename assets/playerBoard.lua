@@ -300,7 +300,7 @@ function PlayerBoard:addBoxToFence(box)
         adj.box:updateFenceVisuals()
     end
 	
-	 -- === NOUVEAU : Retirer aussi les clôtures en commun avec les anciens adjacents ===
+	 -- === NOUVEAU : Retirer aussi les nouvelles clôtures en commun avec les anciens adjacents ===
 	for direction, adjBox in pairs(box.adjacentBox) do
 		if adjBox then
 			-- Si le voisin a déjà une clôture sur le côté commun
@@ -543,6 +543,7 @@ function PlayerBoard:getEnclosureInfo(enclosureId)
     local boxes = {}
     local totalAnimals = {sheep = 0, pig = 0, cattle = 0}
     local hasStable = false
+	local multiplier = 1 -- multiplier pour factoriser selon le nbre d'etable
     
     for r = 1, self.rows do
         for c = 1, self.cols do
@@ -556,19 +557,21 @@ function PlayerBoard:getEnclosureInfo(enclosureId)
                 
                 if box.hasStable then
                     hasStable = true
+					multiplier = multiplier * 2
                 end
             end
         end
     end
 
     if #boxes == 0 then return nil end
+	
 
     local capacity
     if enclosureId == 0 then
         capacity = self.houseAnimalCapacity or 1   -- par défaut 1, cartes pourront modifier
     else
-        local baseCapacity = #boxes * 2
-        capacity = hasStable and baseCapacity * 2 or baseCapacity
+        local baseCapacity = (#boxes * 2)
+		capacity = baseCapacity * multiplier
     end
 
     local dominant = nil
@@ -631,9 +634,10 @@ function PlayerBoard:updateEnclosureCapacity(enclosureId)
     local info = self:getEnclosureInfo(enclosureId)
     if not info then return end
     
-    -- Mettre à jour toutes les cases de l'enclos
+    -- Met à jour toutes les cases de l'enclos
     for _, box in ipairs(info.boxes) do
         box.pastureLimit = info.capacity
+		box:updateVisual()
     end
 end
 
@@ -705,7 +709,6 @@ function PlayerBoard:redistributeAnimalsInEnclosure(enclosureId)
         box:updateVisual()
     end
 
-
 end
 --[[
 ========================================================================================
@@ -727,7 +730,7 @@ function PlayerBoard:_clearEnclosure(enclosureInfo)
     for _, box in ipairs(enclosureInfo.boxes) do
         box.animals = {sheep = 0, pig = 0, cattle = 0}
         box.mySpecies = nil
-        box.state = "pasture"
+       -- box.state = "pasture"
         box:updateVisual()
     end
 end
@@ -753,9 +756,10 @@ function PlayerBoard:addAnimalsToEnclosure(enclosureId, species, count)
     firstBox.animals[species] = firstBox.animals[species] + count
     
     -- Mettre à jour le state visuel de toutes les cases
-    for _, box in ipairs(info.boxes) do
-        box:updateVisual()
-    end
+--    for _, box in ipairs(info.boxes) do
+--        box:updateVisual()
+--    end
+	self.player:updateAllBoxVisual()
     
     print(string.format("✅ +%d %s dans enclos #%d (%d/%d)",count, species, enclosureId, info.totalCount + count, info.capacity))
     
@@ -889,11 +893,85 @@ function PlayerBoard:autoPlaceAnimals(species, quantity)
 			break  -- Plus d'options
 		end
 	end
-
+	
+    -- Mettre à jour le state visuel de toutes les cases
+	self.player:updateAllBoxVisual()
+	
 	print("⚠️ Animaux non placés :", quantity)
 	return quantity
 end
 
+function PlayerBoard:getTotalAnimalCount(animalType)
+    local count = 0
+    
+    for id = 0, self.nextEnclosureId - 1 do
+        local info = self:getEnclosureInfo(id)
+        if info and info.animals then
+            count = count + (info.animals[animalType] or 0)
+        end
+    end
+    
+    return count
+end
+
+
+function PlayerBoard:removeAnimal(species, quantity)
+    local toRemove = quantity
+
+    -- Liste des enclos contenant cette espèce
+    local enclosureList = {}
+
+    for id = 0, self.maxEnclosureId or 10 do
+        local info = self:getEnclosureInfo(id)
+        if info and info.animals[species] > 0 then
+            table.insert(enclosureList, info)
+        end
+    end
+
+    -- Trier pour vider en priorité les enclos les plus fournis
+    table.sort(enclosureList, function(a, b)
+        return a.animals[species] > b.animals[species]
+    end)
+
+    -- --- Suppression ---
+    for _, enclosure in ipairs(enclosureList) do
+        if toRemove <= 0 then break end
+
+        local countHere = enclosure.animals[species]
+        if countHere > 0 then
+            local removeHere = math.min(countHere, toRemove)
+            toRemove = toRemove - removeHere
+
+            -- Enlever dans les cases de l’enclos
+            for _, box in ipairs(enclosure.boxes) do
+                local n = box.animals[species]
+                if n > 0 then
+                    local r = math.min(n, removeHere)
+                    box.animals[species] = box.animals[species] - r
+                    removeHere = removeHere - r
+
+                    -- Gestion du visuel / état
+                    if box.animals[species] == 0 then
+                        box.mySpecies = nil
+                       -- box.state = "pasture"
+                    else
+                        box.mySpecies = species
+                    end
+                    box:updateVisual()
+
+                    if removeHere <= 0 then break end
+                end
+            end
+        end
+    end
+	
+    -- Renvoie la quantité NON retirée
+    if toRemove > 0 then
+        print("⚠️ removeAnimal: Impossible de retirer toute la quantité demandée. Restant: "..toRemove)
+    end
+
+    return toRemove
+end
 
 --[[
 =================================================================================
