@@ -13,8 +13,9 @@ function PlayerBoard:init(player)
     self.rows = 3
     self.boxes = {}
 
-    local startX, startY = 350, 250
-    local spacingX, spacingY = 270, 200
+    local startX, startY = 350, 200
+    local spacingX, spacingY = 256, 256
+	local gap = 8
 
 	self.usedGrain = 0
 	self.usedVegetables = 0
@@ -29,7 +30,7 @@ function PlayerBoard:init(player)
         self.boxes[r] = {}
         for c = 1, self.cols do
             local box = GridBox.new(c, r, player)
-            box:setPosition(startX + (c-1)*spacingX, startY + (r-1)*spacingY)
+            box:setPosition(startX + (c-1)*spacingX +  gap, startY + (r-1)*spacingY + gap)
 			
 			if (r == 2 and c == 1) or (r == 3 and c == 1) then
 				box:convertToHouse("wood")
@@ -705,7 +706,7 @@ function PlayerBoard:redistributeAnimalsInEnclosure(enclosureId)
 	for _, box in ipairs(info.boxes) do
         -- Déterminer l'espèce dominante de cette box
         local dominantSpecies = box:getDominantSpecies()
-        box.state = dominantSpecies  -- "sheep", "pig", "cattle" ou "pasture" si vide
+        box.mySpecies = dominantSpecies  -- "sheep", "pig", "cattle" ou "pasture" si vide
         box:updateVisual()
     end
 
@@ -730,7 +731,7 @@ function PlayerBoard:_clearEnclosure(enclosureInfo)
     for _, box in ipairs(enclosureInfo.boxes) do
         box.animals = {sheep = 0, pig = 0, cattle = 0}
         box.mySpecies = nil
-       -- box.state = "pasture"
+		--box.myType = "pasture"
         box:updateVisual()
     end
 end
@@ -862,6 +863,7 @@ function PlayerBoard:autoPlaceAnimals(species, quantity)
 
 	-- 2) Tester le remaining
 	while quantity > 0 do
+		print("→ Phase C : il reste encore ",quantity)
 		-- Si reste 1 → maison
 --		if quantity == 1 then
 --			local house = self:getEnclosureInfo(0)
@@ -879,15 +881,23 @@ function PlayerBoard:autoPlaceAnimals(species, quantity)
 		for id = 0, self.nextEnclosureId - 1 do
 			if id ~= maxFreeSizeEnclosure then  -- Éviter celui déjà rempli
 				local info = self:getEnclosureInfo(id)
-				if info and info.totalCount == 0 and info.capacity >= quantity then
-					self:_addToEnclosure(info, species, quantity)
-					print("→ Phase C : Remplissage enclos #" .. id .. " +" .. quantity)
-					quantity = 0
-					foundEnclosure = true
-					break
+				if info and info.totalCount == 0 then 
+					if info.capacity >= quantity then
+						self:_addToEnclosure(info, species, quantity)
+						print("→ Phase C : Remplissage enclos #" .. id .. " +" .. quantity)
+						quantity = 0
+						foundEnclosure = true
+						break
+					else
+						self:_addToEnclosure(info, species, info.capacity)
+						print("→ Phase C : Remplissage enclos #" .. id .. " +" .. info.capacity)
+						quantity = quantity - info.capacity
+					end
 				end
 			end
 		end
+		
+		
 		
 		if not foundEnclosure then
 			break  -- Plus d'options
@@ -895,19 +905,24 @@ function PlayerBoard:autoPlaceAnimals(species, quantity)
 	end
 	
     -- Mettre à jour le state visuel de toutes les cases
+	print("⚠️ autoPlaceAnimals. Juste avant getUnassignedAnimals() ")
+		local remaining =  self:getUnassignedAnimals()
 	self.player:updateAllBoxVisual()
-	
-	print("⚠️ Animaux non placés :", quantity)
-	return quantity
+print("⚠️ autoPlaceAnimals. Appel à getUnassignedAnimals() >>> ", remaining.sheep, remaining.pig, remaining.cattle)
+
+	gameManager.ui.validAnimalPlaceBtn:updateButtonState(remaining)
+
+	print("⚠️ Animaux non placés :", remaining.sheep, remaining.pig, remaining.cattle)
+	return remaining
 end
 
-function PlayerBoard:getTotalAnimalCount(animalType)
+function PlayerBoard:getTotalAnimalCount(species)
     local count = 0
     
     for id = 0, self.nextEnclosureId - 1 do
         local info = self:getEnclosureInfo(id)
         if info and info.animals then
-            count = count + (info.animals[animalType] or 0)
+            count = count + (info.animals[species] or 0)
         end
     end
     
@@ -953,7 +968,7 @@ function PlayerBoard:removeAnimal(species, quantity)
                     -- Gestion du visuel / état
                     if box.animals[species] == 0 then
                         box.mySpecies = nil
-                       -- box.state = "pasture"
+                       -- box.myType = "pasture"
                     else
                         box.mySpecies = species
                     end
@@ -972,6 +987,40 @@ function PlayerBoard:removeAnimal(species, quantity)
 
     return toRemove
 end
+
+function PlayerBoard:getUnassignedAnimals()
+    local assigned = { sheep=0, pig=0, cattle=0 }
+
+    -- Parcours tous les enclos
+    local ids = self:getAllEnclosureIds()
+    for _, id in ipairs(ids) do
+        local info = self:getEnclosureInfo(id)
+        for species, count in pairs(info.animals) do
+            assigned[species] = assigned[species] + count
+        end
+    end
+
+    -- Total possédé par le joueur
+    local total = self.player.resources
+
+    -- Calcul final
+	local remaining = {
+        sheep  = total.sheep  - assigned.sheep,
+        pig    = total.pig    - assigned.pig,
+        cattle = total.cattle - assigned.cattle
+    }
+	
+	print(">>> getUnassignedAnimals() reached final return")
+	--if gameManager.ui.validAnimalPlaceBtn then
+	--	gameManager.ui.validAnimalPlaceBtn:updateButtonState(remaining)
+	--end
+    return {
+        sheep  = total.sheep  - assigned.sheep,
+        pig    = total.pig    - assigned.pig,
+        cattle = total.cattle - assigned.cattle
+    }
+end
+
 
 --[[
 =================================================================================

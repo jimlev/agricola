@@ -20,14 +20,14 @@ function Player:init(id, name, color, humanOrNot)
     self.resources = {
         wood = 28,
         clay = 6,
-        stone = 0,
-		reed = 0,
-        grain = 0,
-        vegetable = 1,
+        stone = 6,
+		reed = 5,
+        grain = 5,
+        vegetable = 5,
         sheep = 0,
         pig = 0,
         cattle = 0,
-        food = 0  -- Démarrage avec 2 nourritures		
+        food = 10  -- Démarrage avec 2 nourritures		
     }
 	self.majorCard = {0}
 	self.converters = {}
@@ -335,10 +335,9 @@ end
 
 function Player:setNewHouseState()
     for row = 1, #self.board.boxes do
-        for col = 1, #self.board.boxes[row] do	
-			local mat = self.house.rscType	
+        for col = 1, #self.board.boxes[row] do		
 			local box = self.board.boxes[row][col]
-			box:renovateHouse(mat)
+			box:renovateHouse()
         end
     end
 end
@@ -467,8 +466,8 @@ function Player:printFarmInfo()
                 if box.inGrowingPhase then table.insert(extra, "🌱 croissance") end
                 if box.enclosureId then table.insert(extra, "enclos #" .. box.enclosureId.."  [ 🐑: "..box.animals.sheep.." | 🐖: "..box.animals.pig.." | 🐄: "..box.animals.cattle.."]. Pancarte visible ? : "..tostring(box.badge:isVisible()).." "..tostring(box.badgeCount:getText())) end
 	
-                if box.state and box.state ~= "friche" then
-                    table.insert(extra, "état: " .. tostring(box.state))
+                if box.myType ~= "friche" then
+                    table.insert(extra, "état: " .. tostring(box.myType))
                 end
 
                 local line = string.format("%s Case [%d,%d] | type: %s",

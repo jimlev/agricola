@@ -13,7 +13,7 @@ print("=====================================================================")
 print("=====================================================================")
 print("")
 print("🚨 À GERER : les animaux cuits restent dans les enclos  ")
-print("🚨 EN COURS : les batiments vs les animaux box.state")
+print("🚨 EN COURS : les batiments vs les animaux box.myType")
 print("🚨 À GERER :  Gérer la problematique de bouffe post Naissance")
 print("🚨 À GERER :  Le bouton de dispatch des animaux: afficher les qty, utiliser aussi en harvest phase 3 validAnimalPlaceBtn:updateButtonState()")
 

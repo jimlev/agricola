@@ -339,7 +339,6 @@ function gameManager:executeAction()
 	-- on surcharge le player par le snapshot...
 	self:commitSnapshot(player, snapshot)
 	-- ... puis on détruit le snapshot
-	snapshot:printFarmInfo()
 	self:killSnapshot(player)
 	
 -- ==================================================================================================================	
@@ -492,6 +491,7 @@ function gameManager:cancelAction()
     self.pendingAction = nil
     self.gameIsPaused  = false
     if self.nextFirstPlayer == player then self.nextFirstPlayer = nil end
+	self.currentAction = nil
     -- fermer la popup
     self.ui:killConfirmPopup()
 
@@ -590,8 +590,6 @@ function gameManager:pendingDispatcher()
 		self:handleSpecialAction()
     end
 end
-
-
 
 function gameManager:canStartDrag(playerId)
     return self.currentState == GAME_STATES.PLAYER_ACTIVE and 
@@ -818,27 +816,27 @@ function gameManager:beginAddSheep(player)   -- "mouton"
     player.board:setVisible(true)
 	player.board.isPlayable = true
 
+	self.ui:validAnimalRepartition(player)
 	player:addResource("sheep", self.pendingAction.sign.stock)
 	player.board:autoPlaceAnimals("sheep",self.pendingAction.sign.stock)
-	self.ui:validAnimalRepartition(player)
 end
  
 function gameManager:beginAddPig(player)   -- "pig"
     player.board:setVisible(true)
 	player.board.isPlayable = true
 
+	self.ui:validAnimalRepartition(player)
 	player:addResource("pig", self.pendingAction.sign.stock)
 	player.board:autoPlaceAnimals("pig",self.pendingAction.sign.stock)
-	self.ui:validAnimalRepartition(player)
 end
 
 function gameManager:beginAddCattle(player)   -- "cattle"
     player.board:setVisible(true)
 	player.board.isPlayable = true
 
+	self.ui:validAnimalRepartition(player)
 	player:addResource("cattle", self.pendingAction.sign.stock)
 	player.board:autoPlaceAnimals("cattle",self.pendingAction.sign.stock)
-	self.ui:validAnimalRepartition(player)
 end
 
 function gameManager:beginAddStable(player)   -- "etable"
@@ -871,7 +869,6 @@ end
 -- +++++++++++++++++++++++++++++++++++++ CLIC CLIC CLIC +++++++++++++++++++++++++++++++++++++
 
 function gameManager:handleCardBuy(card)
-
 	self:displayContinueButton()	
 end
 
@@ -930,7 +927,7 @@ function gameManager:handleBoxClick(box)
 			valid = true
 		end		
 
-    elseif self.currentAction == "etable" and (box.state == "friche" or box.myType == "pasture") then
+	elseif self.currentAction == "etable" and (box.myType == "empty" or box.myType == "pasture") then
 		if box:buildStable() then
 			if cost then
 				snapshot:payResources(cost)
@@ -940,8 +937,15 @@ function gameManager:handleBoxClick(box)
 			end
 		end
 		
-	elseif self.currentAction == "sheep" and box.state == "friche" or box.state == "elevage" then
-		--local sheepCount = self.pendingAction.sign.stock
+	elseif self.currentAction == "sheep" then
+		-- TODO: Placement manuel de moutons
+		-- Vérifier si box appartient à un enclos valide
+		-- if box.enclosureId and box:canAddAnimals("sheep", quantity) then
+		--     snapshot.board:addAnimalsToEnclosure(box.enclosureId, "sheep", quantity)
+		--     valid = true
+		-- end
+		
+		-- Pour l'instant, utiliser autoPlaceAnimals() uniquement
 
     end
 
@@ -1313,7 +1317,7 @@ function gameManager:createPlayerSnapshot(player)
             local playerGridBox = originalPlayer.board.boxes[row][col]
             
 			snapshotGridBox.myType = playerGridBox.myType 
-			snapshotGridBox.state = playerGridBox.state 			
+			
 			snapshotGridBox.mySeed = playerGridBox.mySeed  
 			snapshotGridBox.mySeedAmount = playerGridBox.mySeedAmount
 			snapshotGridBox.mySpecies = playerGridBox.mySpecies
@@ -1409,7 +1413,7 @@ function gameManager:commitSnapshot(player, clone)
             if originalGridBox and cloneGridBox then
 			
 				originalGridBox.myType = cloneGridBox.myType 
-				originalGridBox.state = cloneGridBox.state 
+
 				
 				originalGridBox.mySeed = cloneGridBox.mySeed 
 				originalGridBox.mySeedAmount = cloneGridBox.mySeedAmount

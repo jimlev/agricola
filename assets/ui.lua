@@ -321,8 +321,12 @@ function UI:validAnimalRepartition(player)
         end
     end
 
-    function validAnimalPlaceBtn:updateButtonState()
-        local s, p, c = player.resources.sheep, player.resources.pig, player.resources.cattle
+    function validAnimalPlaceBtn:updateButtonState(remaining)
+		if not remaining then
+			remaining = { sheep = 0, pig = 0, cattle = 0 } -- valeurs safe
+		end
+		--local remaining = player.board:getUnassignedAnimals()
+        local s, p, c = remaining.sheep, remaining.pig, remaining.cattle
 
         self:setTexture(Texture.new("gfx/UI/animalsBtn.png"))
         self.sheepcount:setText(s)
@@ -348,7 +352,7 @@ function UI:validAnimalRepartition(player)
 		self:addEventListener(Event.MOUSE_DOWN, self.onClick)
     end
 
-    validAnimalPlaceBtn:updateButtonState()
+    validAnimalPlaceBtn:updateButtonState({ sheep = 0, pig = 0, cattle = 0 })
 end
 
 -- ======================= out of class
