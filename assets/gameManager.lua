@@ -947,7 +947,6 @@ function gameManager:handleBoxClick(box)
 		-- end
 		
 		-- Pour l'instant, utiliser autoPlaceAnimals() uniquement
-
     end
 
     -- 3. Si clic valide, on décrémente et on affiche les bons boutons
@@ -1425,10 +1424,12 @@ function gameManager:commitSnapshot(player, clone)
 				originalGridBox.inGrowingPhase = cloneGridBox.inGrowingPhase 
 				
 				if originalGridBox.myType == "pasture" then
+					print(" JE SUIS UN PATURAGE", originalGridBox.col, originalGridBox.row)
 					originalGridBox.badge:setTexture(Texture.new("gfx/fences/badgeCount.png"))
-				end	
+	
+				end
 				originalGridBox.badge:setVisible(cloneGridBox.badge:isVisible())
-				
+								print("Mon badge est ",originalGridBox.badge:isVisible())
 				originalGridBox.stable:setVisible(cloneGridBox.stable:isVisible())
 				originalGridBox.fenceData = table.clone(cloneGridBox.fenceData, nil, true)
 				originalGridBox.fenceTurnCreated = cloneGridBox.fenceTurnCreated

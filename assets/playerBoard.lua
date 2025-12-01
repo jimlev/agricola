@@ -530,8 +530,6 @@ function PlayerBoard:createEnclosure(boxList, turn)
 		if i == 1 then
 			box.badge:setTexture(Texture.new("gfx/fences/badgeCount.png"))
 			box.badge:setVisible(true) -- createEnclosure: je crée un enclos, j'affiche la pancerte dans la box 'id 1'
-		print("LE BADGE SERA AFFICHE SUR CETTE BOX ",box.col, box.row, box.badge:isVisible())
-
 		end
 	end
    
