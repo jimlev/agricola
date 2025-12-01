@@ -5,7 +5,7 @@ local numberFont = TTFont.new("fonts/K2D-Bold.ttf",28)
 GridBox = Core.class(Sprite)
 
 function GridBox:init(col, row, player)
-	local backImg = Bitmap.new(Texture.new("gfx/playerboard/bgherbe_box.png"))
+	local backImg = Bitmap.new(Texture.new("gfx/playerboard/farmBackTile_square.png"))
 	self:addChild(backImg)
 	self.backImg = backImg
 	
@@ -28,9 +28,7 @@ function GridBox:init(col, row, player)
 	self.imgs = {
 		friche   = Bitmap.new(Texture.new("gfx/playerboard/friche_box_square.png")),
 		laboure  = Bitmap.new(Texture.new("gfx/playerboard/labourage_box_square.png")),
-		grain      = Bitmap.new(Texture.new("gfx/playerboard/ble_box.png")),
-		vegetable   = Bitmap.new(Texture.new("gfx/playerboard/legume_box.png")),
-		pasture  = Bitmap.new(Texture.new("gfx/playerboard/paturage_box.png")),
+		pasture  = Bitmap.new(Texture.new("gfx/playerboard/paturage_box_square.png")),
 		etable   = Bitmap.new(Texture.new("gfx/playerboard/etable_box.png")),
 		
 		-- Maisons bois
@@ -39,9 +37,9 @@ function GridBox:init(col, row, player)
 		woodhouse3  = Bitmap.new(Texture.new("gfx/playerboard/woodhouse_box3_square.png")),
 		
 		-- Maisons argile
-		clayhouse   = Bitmap.new(Texture.new("gfx/playerboard/clayhouse_box1.png")),
-		clayhouse2  = Bitmap.new(Texture.new("gfx/playerboard/clayhouse_box2.png")),
-		clayhouse3  = Bitmap.new(Texture.new("gfx/playerboard/clayhouse_box3.png")),
+		clayhouse   = Bitmap.new(Texture.new("gfx/playerboard/clayhouse_box1_square.png")),
+		clayhouse2  = Bitmap.new(Texture.new("gfx/playerboard/clayhouse_box2_square.png")),
+		clayhouse3  = Bitmap.new(Texture.new("gfx/playerboard/clayhouse_box3_square.png")),
 		
 		-- Maisons pierre
 		stonehouse  = Bitmap.new(Texture.new("gfx/playerboard/stonehouse_box1.png")),
@@ -54,13 +52,6 @@ function GridBox:init(col, row, player)
         img:setVisible(false)
         self:addChild(img)
     end
-
-    local stable = Bitmap.new(Texture.new("gfx/playerboard/stable.png"))
-		stable:setAnchorPoint(0,0)
-		stable:setPosition(32, 24) -- ajuste selon ton sprite
-		self:addChild(stable)
-		self.stable = stable
-		self.stable:setVisible(false)		
 	
 	self.meepleLayer = Sprite.new()
         self:addChild(self.meepleLayer)
@@ -82,11 +73,54 @@ function GridBox:init(col, row, player)
 		self.cattleSprite:setPosition(132,100)	
 		self.meepleLayer:addChild(self.cattleSprite)
 		self.cattleSprite:setVisible(false)	
-		
+	
+	-- plantation: legumes et grain
+	--  MovieClip grain (9 frames : 3×3grains, 3×2grains, 3×1grain)
+	self.grainMeeple = MovieClip.new({
+		-- 3 grains (frames 1-3)
+		{1, 1, Bitmap.new(Texture.new("gfx/fences/grain_31.png"))},
+		{2, 2, Bitmap.new(Texture.new("gfx/fences/grain_32.png"))},
+		{3, 3, Bitmap.new(Texture.new("gfx/fences/grain_33.png"))},
+		-- 2 grains (frames 4-6)
+		{4, 4, Bitmap.new(Texture.new("gfx/fences/grain_21.png"))},
+		{5, 5, Bitmap.new(Texture.new("gfx/fences/grain_22.png"))},
+		{6, 6, Bitmap.new(Texture.new("gfx/fences/grain_23.png"))},
+		-- 1 grain (frames 7-9)
+		{7, 7, Bitmap.new(Texture.new("gfx/fences/grain_11.png"))},
+		{8, 8, Bitmap.new(Texture.new("gfx/fences/grain_12.png"))},
+		{9, 9, Bitmap.new(Texture.new("gfx/fences/grain_13.png"))}
+	})
+	self.grainMeeple:setAnchorPoint(0.5, 0.5)
+	self.grainMeeple:setPosition(132, 132)
+	self.grainMeeple:setVisible(false)
+	self.grainMeeple:stop()
+	self:addChild(self.grainMeeple)
+
+	-- MovieClip vegetable (même structure)
+	self.vegeMeeple = MovieClip.new({
+		-- 2 légumes (frames 1-3)
+		{1, 1, Bitmap.new(Texture.new("gfx/fences/vege_21.png"))},
+		{2, 2, Bitmap.new(Texture.new("gfx/fences/vege_22.png"))},
+		{3, 3, Bitmap.new(Texture.new("gfx/fences/vege_23.png"))},
+		-- 1 légume (frames 4-6)
+		{4, 4, Bitmap.new(Texture.new("gfx/fences/vege_11.png"))},
+		{5, 5, Bitmap.new(Texture.new("gfx/fences/vege_12.png"))},
+		{6, 6, Bitmap.new(Texture.new("gfx/fences/vege_13.png"))}
+	})
+	self.vegeMeeple:setAnchorPoint(0.5, 0.5)
+	self.vegeMeeple:setPosition(132, 148)
+	self.vegeMeeple:setVisible(false)
+	self.vegeMeeple:stop()
+	self:addChild(self.vegeMeeple)
+	
+	-- Stocker la frame actuelle 
+	self.currentGrainFrame = nil
+	self.currentVegeFrame = nil
+	
     -- badge
     local badge = Bitmap.new(Texture.new("gfx/playerboard/harvestCount_box.png"))
 		badge:setAnchorPoint(0.5,0.5)
-		badge:setPosition(224, 166) 
+		badge:setPosition(212, 188) 
 		self:addChild(badge)
 		self.badge = badge
 
@@ -122,7 +156,7 @@ function GridBox:init(col, row, player)
     fenceTop:setAnchorPoint(0.5, 0.5)
     fenceTop:setPosition(self.backImg:getWidth()/2, 16)
     self:addChild(fenceTop)
-	fenceTop:setRotation(math.random(5)-3)
+	--fenceTop:setRotation(math.random(5)-3)
     fenceTop:setVisible(false)
     self.fenceSprites.top = fenceTop
     
@@ -131,7 +165,7 @@ function GridBox:init(col, row, player)
     fenceBottom:setAnchorPoint(0.5, 0.5)
     fenceBottom:setPosition(self.backImg:getWidth()/2, self.backImg:getHeight()-16)
     self:addChild(fenceBottom)
-	fenceBottom:setRotation(math.random(5)-2)
+	--fenceBottom:setRotation(math.random(5)-2)
     fenceBottom:setVisible(false)
     self.fenceSprites.bottom = fenceBottom
     
@@ -140,7 +174,7 @@ function GridBox:init(col, row, player)
 	fenceLeft:setAnchorPoint(0.5, 0.5)
     fenceLeft:setPosition(10, self.backImg:getHeight()/2)
     self:addChild(fenceLeft)
-	fenceLeft:setRotation(math.random(5)-3)
+	--fenceLeft:setRotation(math.random(5)-3)
     fenceLeft:setVisible(false)
     self.fenceSprites.left = fenceLeft
     
@@ -149,16 +183,22 @@ function GridBox:init(col, row, player)
 	fenceRight:setAnchorPoint(0.5, 0.5)
     fenceRight:setPosition(self.backImg:getWidth()-8, self.backImg:getHeight()/2)
     self:addChild(fenceRight)
-	fenceRight:setRotation(math.random(5)-2)
+	--fenceRight:setRotation(math.random(5)-2)
     fenceRight:setVisible(false)
     self.fenceSprites.right = fenceRight	
 
+    local stable = Bitmap.new(Texture.new("gfx/playerboard/stable.png"))
+		stable:setAnchorPoint(0,0)
+		stable:setPosition(12, 12) -- ajuste selon ton sprite
+		self:addChild(stable)
+		self.stable = stable
+		self.stable:setVisible(false)	
+		
 	self:addEventListener(Event.MOUSE_DOWN, self.onClick, self)
 	
     -- état initial
     self:updateVisual()
 end
-
 
 function GridBox:onClick(event)
 	if self:hitTestPoint(event.x, event.y) and self:getParent():isItPlayable() then
@@ -166,7 +206,6 @@ function GridBox:onClick(event)
 		gameManager:handleBoxClick(self)
 	end 
 end
-
 
 function GridBox:getLogicalState()
     if self.myType == "empty" then
@@ -184,7 +223,6 @@ function GridBox:getLogicalState()
         local variant = (self.col + self.row) % 3 + 1
         local suffix = variant == 1 and "" or tostring(variant)
         return string.format("%shouse%s", mat, suffix)
-    
     else
         return "friche"
     end
@@ -198,44 +236,97 @@ function GridBox:updateVisual()
         img:setVisible(false)
     end
     
-    -- 2. Afficher le fond correspondant au state
+    -- 2. Afficher le fond correspondant au logicalstate
     local img = self.imgs[s]
     if img then 
         img:setVisible(true)
-		self:setRotation((math.random(20)-10)/10)
+	--	self:setRotation((math.random(20)-10)/10)
     else
         print("⚠️ Sprite introuvable pour state:", s)
     end
     
-    -- 3. Gérer les graines (field) - OVERLAY
-    if self.myType == "field" and self.mySeed then
-        if self.mySeed == "grain" then
-            self.imgs.grain:setVisible(true)
-        elseif self.mySeed == "vegetable" then
-            self.imgs.vegetable:setVisible(true)
-        end
-        
-        -- Badge récolte
-        self.badge:setTexture(Texture.new("gfx/playerboard/harvestCount_box.png"))
-        self.badgeCount:setText(self.mySeedAmount)
-        self.badge:setVisible(true)
-    else
-        self.badge:setVisible(false)
-    end
-    
+	-- 3. Gérer les graines (field) - OVERLAY
+	if self.myType == "field" then
+		-- Badge récolte
+		self.badge:setTexture(Texture.new("gfx/playerboard/harvestCount_box.png"))
+		self.badgeCount:setText(self.mySeedAmount)
+		self.badge:setVisible(true)
+		
+		if self.mySeed then
+			if self.mySeed == "grain" then
+				-- Calculer la plage de frames selon mySeedAmount
+				local frameRanges = {
+					[3] = {1, 3},   -- 3 grains = frames 1-3
+					[2] = {4, 6},   -- 2 grains = frames 4-6
+					[1] = {7, 9}    -- 1 grain  = frames 7-9
+				}
+				
+				local range = frameRanges[self.mySeedAmount]
+				if range then
+					-- Choisir frame aléatoire si pas déjà définie pour cette quantité
+					if not self.currentGrainFrame or 
+					   self.currentGrainFrame < range[1] or 
+					   self.currentGrainFrame > range[2] then
+						self.currentGrainFrame = math.random(range[1], range[2])
+					end
+					
+					self.grainMeeple:gotoAndStop(self.currentGrainFrame)
+					self.grainMeeple:setVisible(true)
+				end
+				
+				self.vegeMeeple:setVisible(false)
+				
+			elseif self.mySeed == "vegetable" then
+				-- Calculer la plage de frames selon mySeedAmount
+				local frameRanges = {
+					[2] = {1, 3},   -- 2 légumes = frames 1-3
+					[1] = {4, 6}    -- 1 légume  = frames 4-6
+				}
+				
+				local range = frameRanges[self.mySeedAmount]
+				if range then
+					if not self.currentVegeFrame or 
+					   self.currentVegeFrame < range[1] or 
+					   self.currentVegeFrame > range[2] then
+						self.currentVegeFrame = math.random(range[1], range[2])
+					end
+					
+					self.vegeMeeple:gotoAndStop(self.currentVegeFrame)
+					self.vegeMeeple:setVisible(true)
+				end
+				
+				self.grainMeeple:setVisible(false)
+			end
+		else
+			-- Champ vide
+			self.grainMeeple:setVisible(false)
+			self.vegeMeeple:setVisible(false)
+			self.currentGrainFrame = nil
+			self.currentVegeFrame = nil
+		end
+		
+	else
+		self.badge:setVisible(false)
+		self.grainMeeple:setVisible(false)
+		self.vegeMeeple:setVisible(false)
+	end
+	
     -- 4. Gérer les animaux (pasture + house) - OVERLAY
     local totalAnimals = (self.animals.sheep or 0) + (self.animals.pig or 0) + (self.animals.cattle or 0)
-    
+   
+	if self.myType == "pasture" then
+		
+		--self.badge:setTexture(Texture.new("gfx/fences/badgeCount.png"))
+		self.badgeCount:setText(self.pastureLimit or 0)
+		--self.badge:setVisible(true)
+	end	
     if self.mySpecies and totalAnimals > 0 then
         -- Toggle visibility selon espèce
         self.sheepSprite:setVisible(self.mySpecies == "sheep")
         self.pigSprite:setVisible(self.mySpecies == "pig")
         self.cattleSprite:setVisible(self.mySpecies == "cattle")
         
-        -- Badge animaux
-        self.badge:setTexture(Texture.new("gfx/fences/badgeCount.png"))
         self.badgeCount:setText(totalAnimals)
-        self.badge:setVisible(true)
     else
         self.sheepSprite:setVisible(false)
         self.pigSprite:setVisible(false)
@@ -249,7 +340,6 @@ function GridBox:updateVisual()
         self.stable:setVisible(false)
     end
 end
-
 
 -- *$*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$
 -- *$*$*$*$*$*$*$ Helpers pour la conversion de type
@@ -278,11 +368,9 @@ function GridBox:plantSeed()
     return true
 end
 
-
 function GridBox:buildStable()
     if self.myType == "house" or self.hasStable then return false end
-    print("JE CONSTRUIS UNE ETABLE")
-	
+
 	if self.myType == "pasture" then
 		self.pastureLimit = self.pastureLimit * 2  -- sécurise le +2
 	else
@@ -314,7 +402,6 @@ function GridBox:renovateHouse(material)
     self:updateVisual()  -- met à jour le visuel
     return true
 end
-
 
 function GridBox:convertToPasture(capacity)
     if self.myType == "empty" then
@@ -357,9 +444,8 @@ function GridBox:hasSpace(count)
     return total + count <= self.pastureLimit
 end
 
-
 function GridBox:setGrowingStatus()
-    if self.mySeed then 
+    if self.mySeedAmount > 0 then 
 		self.inGrowingPhase = true 
 	else
 		self.inGrowingPhase = false 	
@@ -399,7 +485,6 @@ function GridBox:getDominantSpecies()
     end
     return dominant, max
 end
-
 
 -- ============================================
 -- === GESTION DES CLÔTURES ET ENCLOS ===
@@ -470,7 +555,6 @@ end
 
 function GridBox:updateFenceVisuals()
 	--if not board.pendingFences or not board.pendingFences.boxes then return end
-	  
     for direction, hasFence in pairs(self.fenceData) do
         if hasFence then
             local isTemporary = self.myPlayer.board:isBoxInPendingFences(self)
@@ -480,7 +564,6 @@ function GridBox:updateFenceVisuals()
         end
     end
 end
-
 
 -- **************  Helpers pour la gestion des champs durant le HARVEST 
 -- ********************************
@@ -492,6 +575,7 @@ function GridBox:harvest()
     self.mySeedAmount = self.mySeedAmount - 1
 	if self.mySeedAmount == 0 then   
 		self.mySeed = nil 
+		self.inGrowingPhase = false
 	end
 		
     self:updateVisual()

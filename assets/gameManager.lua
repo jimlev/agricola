@@ -915,6 +915,7 @@ function gameManager:handleBoxClick(box)
 		valid = true
 		
 	elseif self.currentAction == "semaille" and box.myType == "field" then
+	print("mySeedAmount ",box.mySeedAmount,mySeed)
 		if box:canPlant() then	
 			box:plantSeed()
 			valid = true
@@ -1326,11 +1327,11 @@ function gameManager:createPlayerSnapshot(player)
 			snapshotGridBox.pastureLimit = playerGridBox.pastureLimit
 			snapshotGridBox.hasStable = playerGridBox.hasStable
 			snapshotGridBox.inGrowingPhase = playerGridBox.inGrowingPhase 
-			
-			snapshotGridBox.badge:setVisible(playerGridBox.badge:isVisible())
+
 			if snapshotGridBox.myType == "pasture" then
 				snapshotGridBox.badge:setTexture(Texture.new("gfx/fences/badgeCount.png"))
 			end	
+			snapshotGridBox.badge:setVisible(playerGridBox.badge:isVisible())
 			
 			snapshotGridBox.stable:setVisible(playerGridBox.stable:isVisible())
 			snapshotGridBox.fenceData = table.clone(playerGridBox.fenceData, nil, true)
@@ -1423,10 +1424,10 @@ function gameManager:commitSnapshot(player, clone)
 				originalGridBox.hasStable = cloneGridBox.hasStable
 				originalGridBox.inGrowingPhase = cloneGridBox.inGrowingPhase 
 				
-				originalGridBox.badge:setVisible(cloneGridBox.badge:isVisible())
 				if originalGridBox.myType == "pasture" then
 					originalGridBox.badge:setTexture(Texture.new("gfx/fences/badgeCount.png"))
 				end	
+				originalGridBox.badge:setVisible(cloneGridBox.badge:isVisible())
 				
 				originalGridBox.stable:setVisible(cloneGridBox.stable:isVisible())
 				originalGridBox.fenceData = table.clone(cloneGridBox.fenceData, nil, true)

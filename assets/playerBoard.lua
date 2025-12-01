@@ -13,9 +13,9 @@ function PlayerBoard:init(player)
     self.rows = 3
     self.boxes = {}
 
-    local startX, startY = 350, 200
+    local startX, startY = 350, 150
     local spacingX, spacingY = 256, 256
-	local gap = 8
+	local gap = 16
 
 	self.usedGrain = 0
 	self.usedVegetables = 0
@@ -524,14 +524,14 @@ function PlayerBoard:createEnclosure(boxList, turn)
     end
 	
     -- Calculer et attribuer la capacité
-    self:updateEnclosureCapacity(enclosureId)  -- ← Ajoute cet appel
-    print(string.format("createEnclosure() dit:✅ Enclos #%d créé avec %d cases", enclosureId, #boxList))
-	
-	
+    self:updateEnclosureCapacity(enclosureId)  
+
 	for i, box in ipairs(boxList) do
 		if i == 1 then
 			box.badge:setTexture(Texture.new("gfx/fences/badgeCount.png"))
 			box.badge:setVisible(true) -- createEnclosure: je crée un enclos, j'affiche la pancerte dans la box 'id 1'
+		print("LE BADGE SERA AFFICHE SUR CETTE BOX ",box.col, box.row, box.badge:isVisible())
+
 		end
 	end
    
