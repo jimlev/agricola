@@ -906,7 +906,7 @@ function PlayerBoard:autoPlaceAnimals(species, quantity)
 	print("⚠️ autoPlaceAnimals. Juste avant getUnassignedAnimals() ")
 		local remaining =  self:getUnassignedAnimals()
 	self.player:updateAllBoxVisual()
-print("⚠️ autoPlaceAnimals. Appel à getUnassignedAnimals() >>> ", remaining.sheep, remaining.pig, remaining.cattle)
+	print("⚠️ autoPlaceAnimals. Appel à getUnassignedAnimals() >>> ", remaining.sheep, remaining.pig, remaining.cattle)
 
 	gameManager.ui.validAnimalPlaceBtn:updateButtonState(remaining)
 

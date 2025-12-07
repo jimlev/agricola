@@ -313,18 +313,18 @@ function GridBox:updateVisual()
 	
 -- 4. Gérer les pâtures et animaux
 	if self.myType == "pasture" then
-		local totalAnimals = (self.animals.sheep or 0) + (self.animals.pig or 0) + (self.animals.cattle or 0)
-		
+		local enclosureInfo = self.myPlayer.board:getEnclosureInfo(self.enclosureId)
+  		local totalAnimals = enclosureInfo.totalCount or 0
 		-- Mettre à jour le CONTENU du badge (si visible)
 		if self.badge:isVisible() then
 			if totalAnimals > 0 then
 				self.badge:setPosition(128, 188) 
 				self.badgeCount:setPosition(-16, 24) 
-				self.badgeCount:setText(totalAnimals .. "/" .. (self.pastureLimit or 0))
+                self.badgeCount:setText(totalAnimals .. "/" .. enclosureInfo.capacity)
 			else
 				self.badge:setPosition(128, 188)
 				self.badgeCount:setPosition(-6, 24)
-				self.badgeCount:setText(self.pastureLimit or 0)
+                self.badgeCount:setText(enclosureInfo.capacity)
 			end
 		end
 		
@@ -338,8 +338,23 @@ function GridBox:updateVisual()
 			self.pigSprite:setVisible(false)
 			self.cattleSprite:setVisible(false)
 		end
-    end
-   
+	
+	--  Gérer les animaux dans la maison
+	elseif self.myType == "house" then
+		local totalAnimals = (self.animals.sheep or 0) + (self.animals.pig or 0) + (self.animals.cattle or 0)
+		
+		if self.mySpecies and totalAnimals > 0 then
+			self.sheepSprite:setVisible(self.mySpecies == "sheep")
+			self.pigSprite:setVisible(self.mySpecies == "pig")
+			self.cattleSprite:setVisible(self.mySpecies == "cattle")
+			
+			-- Pas de badge sur maison (1 place fixe)
+		else
+			self.sheepSprite:setVisible(false)
+			self.pigSprite:setVisible(false)
+			self.cattleSprite:setVisible(false)
+		end
+	end
     -- 5. Gérer l'étable - OVERLAY
     if self.hasStable then
         self.stable:setVisible(true)
